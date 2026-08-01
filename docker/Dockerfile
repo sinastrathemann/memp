@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ---- Base ----
-FROM node:22-alpine AS base
+FROM node:25-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -35,7 +35,7 @@ RUN pnpm --filter @mexp/web build
 RUN pnpm deploy --filter @mexp/api --prod /app/deploy
 
 # ---- Runtime ----
-FROM node:22-alpine AS runtime
+FROM node:25-alpine AS runtime
 ARG APP_VERSION=dev
 WORKDIR /app
 
