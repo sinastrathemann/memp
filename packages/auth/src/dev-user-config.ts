@@ -23,8 +23,17 @@ let cached: DevUser | null = null;
 
 export function loadDevUser(): DevUser {
   if (cached) return cached;
-  const path = resolve(process.cwd(), "config/dev-user.yaml");
-  if (!existsSync(path)) {
+  // Suche config/dev-user.yaml in cwd sowie den nächsten 3 Parent-Verzeichnissen —
+  // damit die Datei auch gefunden wird wenn der API-Prozess aus apps/api/ startet
+  // (pnpm --filter setzt cwd auf das Package, nicht auf's Repo-Root).
+  const candidates = [
+    resolve(process.cwd(), "config/dev-user.yaml"),
+    resolve(process.cwd(), "../config/dev-user.yaml"),
+    resolve(process.cwd(), "../../config/dev-user.yaml"),
+    resolve(process.cwd(), "../../../config/dev-user.yaml"),
+  ];
+  const path = candidates.find((p) => existsSync(p));
+  if (!path) {
     cached = DEFAULT_DEV_USER;
     return cached;
   }

@@ -1123,7 +1123,7 @@ eventRoutes.post("/:id/register", async (c) => {
     const mexpUser = mexpUserStore.get(actorId);
     const DEV_NAMES: Record<string, { name: string; email: string }> = {
       "550e8400-e29b-41d4-a716-446655440000": {
-        name: "Sina (Dev)",
+        name: "Sina Strathemann",
         email: "sina.strathemann@mindsquare.de",
       },
       "550e8400-e29b-41d4-a716-446655440001": {

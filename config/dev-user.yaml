@@ -3,5 +3,6 @@
 id: dev-user-sina
 email: sina.strathemann@mindsquare.de
 name: Sina Strathemann
-roles:
-  - AppHub.Admin
+# Für Teilnehmer-Sicht: roles komplett leer (kein AppHub.Admin).
+# Für Admin-Sicht: `- AppHub.Admin` unter roles setzen, API neu starten.
+roles: []
