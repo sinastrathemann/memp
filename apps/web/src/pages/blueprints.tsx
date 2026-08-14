@@ -347,7 +347,7 @@ export default function BlueprintsPage() {
           }}
         >
           <form onSubmit={handleApply} className="modal">
-            <div className="eyebrow">Blueprint</div>
+            <div className="eyebrow">Vorlage</div>
             <h2 style={{ marginTop: 0 }}>{t("blueprints.applyTitle")}</h2>
             <div className="field">
               <label className="label" htmlFor="ap-title">

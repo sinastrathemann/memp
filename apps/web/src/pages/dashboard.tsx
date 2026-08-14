@@ -37,8 +37,9 @@ const PART_FILL: Record<ParticipationStatus, string> = {
 
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const { hasRole } = useAuth();
+  const { user, hasRole } = useAuth();
   const canSeeRates = hasRole("admin", "manager", "event_office");
+  const firstName = (user?.name ?? "").split(" ")[0] || user?.name || "";
   const { data, isLoading, error } = useQuery({
     queryKey: ["dashboard", "portfolio"],
     queryFn: () => apiFetch<{ stats: PortfolioStatsDto }>("/dashboard/portfolio"),
@@ -69,7 +70,9 @@ export default function DashboardPage() {
       <div className="page-header">
         <div>
           <div className="eyebrow">Portfolio · Live</div>
-          <h1 className="page-title">{t("dashboard.title")}</h1>
+          <h1 className="page-title">
+            Hallo{firstName ? `, ${firstName}` : ""}
+          </h1>
           <p className="page-subtitle">Übersicht aller Events, Teilnehmer und Quoten</p>
         </div>
       </div>

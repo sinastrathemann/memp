@@ -7,9 +7,21 @@ export function Sidebar() {
   const { t, i18n } = useTranslation();
   const { user, hasRole } = useAuth();
 
+  // Admins/Manager/EventOffice sehen die KPI-Dashboard-Seite als Startseite,
+  // normale Teilnehmer sehen ihre persönliche Home-Seite ("Hallo, ...").
+  // Logo + erster Sidebar-Menüpunkt führen beide zum jeweils passenden Ziel —
+  // so gibt's genau EIN Dashboard pro User statt zwei parallel.
+  const isPrivileged = hasRole("admin", "manager", "event_office");
+  const homeRoute = isPrivileged ? "/dashboard" : "/";
+  const homeLabel = isPrivileged
+    ? t("dashboard.navLink")
+    : i18n.language === "de"
+      ? "Startseite"
+      : "Home";
+
   return (
     <aside className="ms-sidebar">
-      <NavLink to="/" className="ms-sidebar-logo">
+      <NavLink to={homeRoute} className="ms-sidebar-logo">
         <img src={logoUrl} alt="mindsquare" />
         <span className="ms-sidebar-logo-sub">mEXP</span>
       </NavLink>
@@ -17,13 +29,14 @@ export function Sidebar() {
       <nav className="ms-sidebar-nav">
         {user && (
           <NavLink
-            to="/dashboard"
+            to={homeRoute}
+            end
             className={({ isActive }) => `ms-sidebar-link${isActive ? " active" : ""}`}
           >
             <span className="ms-sidebar-icon" aria-hidden="true">
               🏠
             </span>
-            {t("dashboard.navLink")}
+            {homeLabel}
           </NavLink>
         )}
         {user && (

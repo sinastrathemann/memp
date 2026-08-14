@@ -211,7 +211,7 @@
   "blueprints": {
     "navLink": "Vorlagen",
     "title": "Event-Vorlagen",
-    "intro": "Blueprints beschleunigen das Anlegen wiederkehrender Event-Typen. Standardwerte werden beim Anwenden in ein neues Event kopiert.",
+    "intro": "Vorlagen beschleunigen das Anlegen wiederkehrender Event-Typen. Die Standardwerte werden beim Anwenden in ein neues Event kopiert.",
     "empty": "Noch keine Vorlagen angelegt.",
     "create": "Vorlage anlegen",
     "apply": "Anwenden",
