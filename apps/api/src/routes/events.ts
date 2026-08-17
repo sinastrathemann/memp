@@ -664,10 +664,7 @@ eventRoutes.post(
     if (!env.DATABASE_URL) {
       const source = findDevBaseEvent(sourceId);
       if (!source) {
-        return c.json(
-          { error: { code: "NOT_FOUND", message: "Quell-Event nicht gefunden" } },
-          404,
-        );
+        return c.json({ error: { code: "NOT_FOUND", message: "Quell-Event nicht gefunden" } }, 404);
       }
       // Quell-Event + Overrides mergen (kein Deleted-Flag/ID/CreatedAt übernehmen)
       const merged = applyOverride(source) as Record<string, unknown>;

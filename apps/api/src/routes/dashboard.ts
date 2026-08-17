@@ -91,9 +91,7 @@ function computeDevStats() {
   // Der Store bildet eventId -> Liste der Teilnehmenden ab. Vorher wurde ueber
   // .values() iteriert und jede LISTE als einzelner Teilnehmer behandelt — dadurch
   // zaehlte jedes Event als genau eine Anmeldung, egal wie viele Leute drin standen.
-  const closedEventIds = new Set(
-    allEvents.filter((e) => e.status === "closed").map((e) => e.id),
-  );
+  const closedEventIds = new Set(allEvents.filter((e) => e.status === "closed").map((e) => e.id));
   let closedSeats = 0;
   let closedAttended = 0;
   let closedNoShow = 0;
