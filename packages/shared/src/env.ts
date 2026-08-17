@@ -22,8 +22,12 @@ const envSchema = z.object({
   AZURE_TENANT_ID: z.string().optional(),
   AZURE_CLIENT_ID: z.string().optional(),
   AZURE_CLIENT_SECRET: z.string().optional(),
-  SHAREPOINT_SITE_URL: z.string().default("https://mindsquare1.sharepoint.com/sites/fk/tl"),
-  SHAREPOINT_STUDIS_LIST_ID: z.string().default("c2364bea-6f17-4532-b1ca-ebd9dee40c13"),
+  // Audit-Finding SEC-23: bewusst KEINE Defaults. Mit hinterlegten Produktivwerten
+  // lief der Abgleich ohne jede Konfiguration stillschweigend gegen die echte
+  // SharePoint-Liste, statt mit einer Fehlermeldung abzubrechen. Zusaetzlich
+  // gehoeren interne Adressen und Listen-IDs nicht in den Quellcode.
+  SHAREPOINT_SITE_URL: z.string().url().optional(),
+  SHAREPOINT_STUDIS_LIST_ID: z.string().optional(),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

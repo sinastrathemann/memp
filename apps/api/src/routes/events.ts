@@ -89,7 +89,10 @@ const WRITE_ROLES = ["admin", "manager", "event_office", "werkstudent"] as const
 
 // Dev-Mode: Override-Store für Events (eventId → Patch)
 // Persistiert in apps/api/data/event-overrides.json — bleibt bei Neustarts erhalten
-const devEventOverrideStore = persistentMap<Record<string, unknown>>("event-overrides");
+// Exportiert, damit lesende Routen (z. B. dashboard.ts) DIESELBE Instanz benutzen.
+// Eine zweite persistentMap auf dieselbe Datei liest nur beim Prozessstart und
+// friert danach ein — siehe Audit-Finding FUN-08.
+export const devEventOverrideStore = persistentMap<Record<string, unknown>>("event-overrides");
 
 function applyOverride<T extends { id: string }>(event: T): T {
   const ov = devEventOverrideStore.get(event.id);
@@ -106,7 +109,8 @@ export interface DevEventRecord {
   [key: string]: unknown;
 }
 
-const devCreatedEventsStore = persistentMap<DevEventRecord>("created-events");
+// Exportiert — gleiche Begruendung wie bei devEventOverrideStore (FUN-08).
+export const devCreatedEventsStore = persistentMap<DevEventRecord>("created-events");
 
 function listDevBaseEvents(): DevEventRecord[] {
   return [
@@ -1059,10 +1063,15 @@ eventRoutes.get("/:id/emergency-list", requireMexpRole(...WRITE_ROLES), async (c
 });
 
 function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  // Zellen, die mit = + - @ Tab oder CR beginnen, fuehrt Excel/LibreOffice beim
+  // Oeffnen als Formel aus statt sie als Text anzuzeigen (CSV Injection, SEC-19).
+  // Namen und Freitexte stammen aus Personio, SharePoint und CSV-Import — also
+  // aus Quellen ausserhalb der Anwendung. Ein Apostroph erzwingt Text.
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  if (/[",\n\r]/.test(safe)) {
+    return `"${safe.replace(/"/g, '""')}"`;
   }
-  return value;
+  return safe;
 }
 
 eventRoutes.post("/:id/register", async (c) => {

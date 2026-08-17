@@ -25,12 +25,19 @@ const log = rootLogger.child({ module: "api/admin/sharepoint" });
 export const adminSharepointRoutes = new Hono();
 
 adminSharepointRoutes.post("/sync-studis", requireHubAdmin(), async (c) => {
-  if (!env.AZURE_TENANT_ID || !env.AZURE_CLIENT_ID || !env.AZURE_CLIENT_SECRET) {
+  if (
+    !env.AZURE_TENANT_ID ||
+    !env.AZURE_CLIENT_ID ||
+    !env.AZURE_CLIENT_SECRET ||
+    !env.SHAREPOINT_SITE_URL ||
+    !env.SHAREPOINT_STUDIS_LIST_ID
+  ) {
     return c.json(
       {
         error: "sharepoint_not_configured",
         message:
-          "AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET fehlen in der .env. Siehe docs/sharepoint-integration.md.",
+          "AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET / SHAREPOINT_SITE_URL / " +
+          "SHAREPOINT_STUDIS_LIST_ID fehlen in der .env. Siehe docs/sharepoint-integration.md.",
       },
       400,
     );

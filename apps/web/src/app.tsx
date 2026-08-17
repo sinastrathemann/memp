@@ -33,7 +33,7 @@ function AppRoutes() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={["admin", "manager", "event_office"]}>
             <DashboardPage />
           </ProtectedRoute>
         }

@@ -1,15 +1,20 @@
 import { getPortfolioStats } from "@mexp/application";
 import { Hono } from "hono";
 import { dashboard, env } from "../deps.js";
-import { persistentMap } from "../dev-persistence.js";
+import { requireMexpRole } from "./_user-resolution.js";
+import { devCreatedEventsStore, devEventOverrideStore } from "./events.js";
+import { devLiveParticipantsStore } from "./registration-form.js";
 
 export const dashboardRoutes = new Hono();
 
-// Dev-Store-Zugriff nur für Aggregation — dieselben Stores wie in events.ts + registration-form.ts.
-// (Wir lesen nur, wir mutieren nicht — die Stores sind bereits über die anderen Routes befüllt.)
-const devCreatedEventsStore = persistentMap<Record<string, unknown>>("created-events");
-const devEventOverrideStore = persistentMap<Record<string, unknown>>("event-overrides");
-const devLiveParticipantsStore = persistentMap<Record<string, unknown>>("live-participants");
+// Portfolio-Kennzahlen sind Managementdaten (Auslastung, Quoten ueber alle Events)
+// und gehen normale Teilnehmende nichts an — Audit-Finding SEC-06.
+// Rollen bewusst identisch zur Sidebar-Logik in apps/web/src/components/sidebar.tsx.
+const PORTFOLIO_ROLES = ["admin", "manager", "event_office"] as const;
+
+// WICHTIG: Diese Stores werden aus den schreibenden Modulen importiert, nicht hier
+// neu erzeugt. persistentMap liest die Datei nur einmal beim Erzeugen — eine eigene
+// Instanz wuerde den Stand vom Prozessstart einfrieren (Audit-Finding FUN-08).
 
 interface EventLike {
   id: string;
@@ -83,16 +88,41 @@ function computeDevStats() {
     attended: 0,
     no_show: 0,
   };
-  for (const p of devLiveParticipantsStore.values()) {
-    const st = (p as { status?: string }).status ?? "registered";
-    if (participationByStatus[st] !== undefined) participationByStatus[st]++;
+  // Der Store bildet eventId -> Liste der Teilnehmenden ab. Vorher wurde ueber
+  // .values() iteriert und jede LISTE als einzelner Teilnehmer behandelt — dadurch
+  // zaehlte jedes Event als genau eine Anmeldung, egal wie viele Leute drin standen.
+  const closedEventIds = new Set(
+    allEvents.filter((e) => e.status === "closed").map((e) => e.id),
+  );
+  let closedSeats = 0;
+  let closedAttended = 0;
+  let closedNoShow = 0;
+
+  for (const [eventId, participants] of devLiveParticipantsStore.entries()) {
+    for (const p of participants) {
+      const st = p.status ?? "registered";
+      if (participationByStatus[st] !== undefined) participationByStatus[st]++;
+      if (!closedEventIds.has(eventId)) continue;
+      // Nenner der Quoten sind alle bestaetigten Plaetze. Warteliste zaehlt nicht
+      // mit — diese Personen hatten nie einen Platz und konnten nicht fehlen.
+      if (st === "attended") {
+        closedAttended++;
+        closedSeats++;
+      } else if (st === "no_show") {
+        closedNoShow++;
+        closedSeats++;
+      } else if (st === "registered") {
+        closedSeats++;
+      }
+    }
   }
 
-  const attended = participationByStatus.attended ?? 0;
-  const noShow = participationByStatus.no_show ?? 0;
-  const totalCheckable = attended + noShow;
-  const attendanceRate = totalCheckable > 0 ? attended / totalCheckable : null;
-  const noShowRate = totalCheckable > 0 ? noShow / totalCheckable : null;
+  // Audit-Finding FUN-16: Der Nenner darf nicht (anwesend + Fehlzeit) sein. Sonst
+  // zeigt die Quote 100 %, solange niemand Fehlzeiten pflegt — auch wenn die
+  // Haelfte nicht erschienen ist. Gezaehlt werden nur abgeschlossene Events;
+  // laufende und kommende wuerden die Quote sonst kuenstlich druecken.
+  const attendanceRate = closedSeats > 0 ? closedAttended / closedSeats : null;
+  const noShowRate = closedSeats > 0 ? closedNoShow / closedSeats : null;
 
   return {
     eventsByStatus,
@@ -104,7 +134,7 @@ function computeDevStats() {
   };
 }
 
-dashboardRoutes.get("/portfolio", async (c) => {
+dashboardRoutes.get("/portfolio", requireMexpRole(...PORTFOLIO_ROLES), async (c) => {
   if (!env.DATABASE_URL) {
     return c.json({ stats: computeDevStats() });
   }

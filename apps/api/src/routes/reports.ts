@@ -230,7 +230,12 @@ function computeReportSummary() {
 // ─── CSV-Helfer ─────────────────────────────────────────────────────
 // Semikolon-Delimiter + UTF-8-BOM: Excel-DE öffnet das ohne Encoding-Dialog korrekt.
 function csvCell(value: string | number | null | undefined): string {
-  const s = value === null || value === undefined ? "" : String(value);
+  const raw = value === null || value === undefined ? "" : String(value);
+  // Zellen, die mit = + - @ Tab oder CR beginnen, fuehrt Excel/LibreOffice beim
+  // Oeffnen als Formel aus statt sie als Text anzuzeigen (CSV Injection, SEC-19).
+  // Diese Exporte werden typischerweise von privilegierten Personen geoeffnet —
+  // der Angriff wuerde also die Vertrauensgrenze Teilnehmer -> Admin ueberschreiten.
+  const s = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
   if (/[";\n\r]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }

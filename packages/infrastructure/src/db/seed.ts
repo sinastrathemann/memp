@@ -21,14 +21,25 @@ const ROLE_DEFINITIONS = [
   { name: "admin", description: "Vollzugriff inkl. Konfiguration und Blueprints" },
 ] as const;
 
-const ADMIN_EMAIL = "sina.strathemann@mindsquare.de";
-const ADMIN_PASSWORD = "mindsquare2026";
-const ADMIN_DISPLAY_NAME = "Sina Strathemann";
+// Audit-Finding SEC-05: Zugangsdaten kommen ausschliesslich aus der Umgebung.
+// Hartcodierte Werte landen dauerhaft in der Git-Historie und lassen sich auch
+// durch spaeteres Loeschen nicht mehr entfernen. Ohne gesetzte Variablen bricht
+// das Skript ab, statt ein bekanntes Standardpasswort zu vergeben.
+const ADMIN_EMAIL = process.env["SEED_ADMIN_EMAIL"];
+const ADMIN_PASSWORD = process.env["SEED_ADMIN_PASSWORD"];
+const ADMIN_DISPLAY_NAME = process.env["SEED_ADMIN_DISPLAY_NAME"] ?? "mEXP Admin";
 
 async function main() {
   const databaseUrl = process.env["DATABASE_URL"];
   if (!databaseUrl) {
     throw new Error("DATABASE_URL ist nicht gesetzt.");
+  }
+
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error(
+      "SEED_ADMIN_EMAIL und SEED_ADMIN_PASSWORD muessen gesetzt sein. " +
+        "Das Seed-Skript vergibt bewusst kein Standardpasswort.",
+    );
   }
 
   const db = createDbClient(databaseUrl);

@@ -125,8 +125,13 @@ myDashboardRoutes.get("/dashboard", (c) => {
       if (item.eventId === e.id) totalNet += item.actualNetCents ?? 0;
     }
     const participants = devLiveParticipantsStore.get(e.id) ?? [];
-    // statisch + live (vereinfacht: nur live + 1 admin-Static)
-    const headcount = Math.max(1, participants.length + 2); // Static-Mocks (Anna, Tim) zählen wir mit
+    // Divisor sind ausschliesslich die tatsaechlichen Teilnehmenden. Frueher wurden
+    // hier +2 aufgeschlagen (Static-Mocks "Anna"/"Tim"), die es seit dem Pilot-
+    // Aufraeumen nicht mehr gibt — der Pro-Kopf-Anteil war dadurch immer zu niedrig.
+    // Ohne Teilnehmende ist der Anteil fachlich nicht berechenbar: weder 0 noch der
+    // Gesamtbetrag waeren richtig, deshalb faellt das Event aus der Aufstellung.
+    const headcount = participants.length;
+    if (headcount === 0) continue;
     const share = Math.round(totalNet / headcount);
     if (share > 0) {
       totalCostCents += share;
