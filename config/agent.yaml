@@ -2,6 +2,19 @@
 # mEXP Agent/Plattform-Konfiguration
 # Domaenenspezifische Parameter. Überschreibbar via agent.<env>.yaml + ENV.
 # ============================================================
+#
+# !!! ACHTUNG — DIESE DATEI WIRD DERZEIT VON KEINER CODEZEILE GELESEN !!!
+# (Audit-Finding ARC-01)
+#
+# Saemtliche Werte hier sind aktuell reine Absichtserklaerung. Wer hier etwas
+# aendert — Fristen, Freigabegrenzen, Steuerfreibetrag, Rollen — aendert an der
+# laufenden Anwendung EXAKT NICHTS. Es gibt keine Fehlermeldung, die darauf
+# hinweist. Die tatsaechlich wirksamen Werte stehen hart im Code, verteilt ueber
+# apps/api/src/routes/*.ts.
+#
+# Die Projektdoku (mEXP-Doku.md:119) behauptet das Gegenteil und ist an dieser
+# Stelle falsch. Vor produktiver Nutzung muss ein validierter Loader ergaenzt
+# werden — das Muster existiert bereits in packages/auth/src/dev-user-config.ts.
 
 app:
   name: "mexp"
@@ -33,6 +46,21 @@ budget:
     manager: 2500
     board: 10000
   tax:
+    # !!! NICHT IMPLEMENTIERT (Audit-Finding FUN-02) !!!
+    # Es gibt im Code KEINE Berechnung, KEINEN Vergleich gegen diesen Grenzwert
+    # und KEINEN Hinweis in der Oberflaeche. Weder der Betrag noch die
+    # Warnschwelle haben irgendeine Wirkung.
+    #
+    # Konkret: mEXP warnt NICHT vor der Ueberschreitung des §19-Freibetrags.
+    # Wer sich darauf verlaesst, bemerkt eine Ueberschreitung erst bei der
+    # Lohnsteuer-Aussenpruefung — dann rueckwirkend fuer alle Veranstaltungen
+    # und alle Teilnehmenden, mit Haftung beim Arbeitgeber.
+    #
+    # Vor der Umsetzung mit Controlling/Steuerberatung klaeren: Brutto- statt
+    # Nettobasis, Divisor = tatsaechlich erschienene Personen, Freibetrag- statt
+    # Freigrenzenlogik, Behandlung von Begleitpersonen. Der Schluessel heisst
+    # "..._limit_eur", gemeint ist aber ein FREIBETRAG (nur der uebersteigende
+    # Teil ist steuerpflichtig) — nicht eine Freigrenze.
     company_event_per_participant_limit_eur: 110.00   # §19 Abs. 1 EStG
     warn_threshold_percent: 90
 
