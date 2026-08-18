@@ -227,7 +227,9 @@ export default function HomePage() {
           </div>
           <div className="bento-tile tone-yellow span-3">
             <div className="bento-eyebrow">🛠️ Geplant</div>
-            <div className="bento-headline size-md">{stats.upcoming > 0 ? stats.upcoming : "–"}</div>
+            <div className="bento-headline size-md">
+              {stats.upcoming > 0 ? stats.upcoming : "–"}
+            </div>
             <div className="bento-sub">in Vorbereitung</div>
           </div>
           <div className="bento-tile span-3">
