@@ -70,9 +70,7 @@ export default function DashboardPage() {
       <div className="page-header">
         <div>
           <div className="eyebrow">Portfolio · Live</div>
-          <h1 className="page-title">
-            Hallo{firstName ? `, ${firstName}` : ""}
-          </h1>
+          <h1 className="page-title">Hallo{firstName ? `, ${firstName}` : ""}</h1>
           <p className="page-subtitle">Übersicht aller Events, Teilnehmer und Quoten</p>
         </div>
       </div>
@@ -99,7 +97,9 @@ export default function DashboardPage() {
             {s.upcomingEventsCount > 0 ? s.upcomingEventsCount : "–"}
           </div>
           <div className="bento-sub">
-            {s.upcomingEventsCount > 0 ? "in den nächsten 30 Tagen" : "Nichts in den nächsten 30 Tagen"}
+            {s.upcomingEventsCount > 0
+              ? "in den nächsten 30 Tagen"
+              : "Nichts in den nächsten 30 Tagen"}
           </div>
         </div>
 

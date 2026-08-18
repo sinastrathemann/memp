@@ -22,7 +22,7 @@ export default function EventsListPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const bulkMut = useMutation({
     mutationFn: (status: string) =>
-      apiFetch(`/events/bulk/status`, {
+      apiFetch("/events/bulk/status", {
         method: "POST",
         body: JSON.stringify({ eventIds: selectedIds, status }),
       }),

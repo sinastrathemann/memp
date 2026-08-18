@@ -132,6 +132,7 @@ export function AddParticipantModal({ eventId, eventTitle, onClose }: AddPartici
           <input
             type="search"
             className="input"
+            // biome-ignore lint/a11y/noAutofocus: Fokus wandert in einen bewusst geöffneten Dialog — WAI-ARIA-Dialogmuster, nicht Autofokus beim Seitenaufruf.
             autoFocus
             placeholder={t("participants.addSearchPlaceholder")}
             value={searchQuery}
@@ -149,9 +150,7 @@ export function AddParticipantModal({ eventId, eventTitle, onClose }: AddPartici
         )}
 
         <div style={{ marginTop: "var(--space-3)" }}>
-          {showEmptyHint && (
-            <p className="muted text-sm">{t("participants.addSearchHint")}</p>
-          )}
+          {showEmptyHint && <p className="muted text-sm">{t("participants.addSearchHint")}</p>}
           {!showEmptyHint && searchQ.isFetching && (
             <p className="muted text-sm">{t("participants.addSearching")}</p>
           )}
@@ -175,7 +174,10 @@ export function AddParticipantModal({ eventId, eventTitle, onClose }: AddPartici
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
-                      <div className="text-bold" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div
+                        className="text-bold"
+                        style={{ overflow: "hidden", textOverflow: "ellipsis" }}
+                      >
                         {u.displayName}
                       </div>
                       <div className="muted text-sm">{u.email ?? "—"}</div>

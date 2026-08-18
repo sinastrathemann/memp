@@ -32,7 +32,10 @@ export const userSearchRoutes = new Hono();
 userSearchRoutes.get("/search", requireMexpRole(...WRITE_ROLES), (c) => {
   const query = (c.req.query("q") ?? "").trim().toLowerCase();
   const limitParam = Number(c.req.query("limit") ?? DEFAULT_LIMIT);
-  const limit = Math.min(Number.isFinite(limitParam) && limitParam > 0 ? limitParam : DEFAULT_LIMIT, MAX_LIMIT);
+  const limit = Math.min(
+    Number.isFinite(limitParam) && limitParam > 0 ? limitParam : DEFAULT_LIMIT,
+    MAX_LIMIT,
+  );
 
   if (query.length < MIN_QUERY_LENGTH) {
     return c.json({ users: [] });
