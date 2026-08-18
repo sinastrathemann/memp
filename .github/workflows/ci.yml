@@ -16,9 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Keine `version:`-Angabe — ab action-setup@v6 ist eine zweite Versionsquelle
+      # neben `packageManager` in der package.json ein harter Fehler.
       - uses: pnpm/action-setup@v6
-        with:
-          version: 9
 
       - uses: actions/setup-node@v7
         with:
