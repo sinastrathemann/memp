@@ -12,6 +12,9 @@ concurrency:
 
 jobs:
   mirror:
+    # Auf Forgejo (mindcode) wuerde dieser Job das Repository auf sich selbst
+    # spiegeln — sinnlos. Nur auf GitHub ausfuehren.
+    if: ${{ !contains(github.server_url, 'mindcode') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (full history)

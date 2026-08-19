@@ -17,6 +17,12 @@ permissions:
 
 jobs:
   build-and-push:
+    # Forgejo (mindcode) fuehrt .github/workflows/ ebenfalls aus. Dort scheitert
+    # dieser Job zwangslaeufig, weil secrets.GITHUB_TOKEN nur auf GitHub existiert.
+    # Der Build auf GitHub publiziert ohnehin in BEIDE Registries (siehe images:
+    # weiter unten), ein zweiter Build waere doppelte Arbeit mit doppelter
+    # Fehlerquelle. Beim Abschalten von GitHub wird die Bedingung umgedreht.
+    if: ${{ !contains(github.server_url, 'mindcode') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
