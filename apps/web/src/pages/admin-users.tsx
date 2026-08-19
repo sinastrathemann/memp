@@ -6,6 +6,7 @@ import { apiFetch } from "../api/client";
 import { useAuth } from "../auth/auth-context";
 import { ROLE_NAMES } from "../auth/types";
 import type { AdminUserRow, RoleName } from "../auth/types";
+import { withBasePath } from "../base-path";
 
 interface PersonioSyncResult {
   ok: boolean;
@@ -67,7 +68,7 @@ export default function AdminUsersPage() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/admin/users/import-csv", {
+      const res = await fetch(withBasePath("/api/admin/users/import-csv"), {
         method: "POST",
         credentials: "include",
         body: formData,

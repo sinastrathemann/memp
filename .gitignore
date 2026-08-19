@@ -49,3 +49,7 @@ tmp/
 # Dev-Mode in-memory store persistence (lokale JSON-Dateien)
 apps/api/data/
 apps/api/data.backup-*/
+
+# Gebautes Web-Bundle, das die API ausliefert (im Image /app/web-dist).
+# Entsteht lokal beim Testen des Container-Layouts.
+apps/api/web-dist/

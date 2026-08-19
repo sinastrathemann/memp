@@ -1,3 +1,5 @@
+import { withBasePath } from "../base-path";
+
 export interface ApiError {
   code: string;
   message: string;
@@ -16,7 +18,10 @@ export class ApiRequestError extends Error {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = path.startsWith("/api") ? path : `/api${path}`;
+  // withBasePath ist Pflicht, nicht Kosmetik: hinter dem Agent Hub liegt die App
+  // unter /<slug>/, und wurzel-absolute /api/*-Aufrufe landen sonst bei der
+  // Hub-eigenen API (reservierter Pfad laut Hub-Vertrag) statt bei mEXP.
+  const url = withBasePath(path.startsWith("/api") ? path : `/api${path}`);
   const res = await fetch(url, {
     ...init,
     credentials: "include",

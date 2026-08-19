@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ApiRequestError, apiFetch } from "../api/client";
+import { withBasePath } from "../base-path";
 import type { TenderDto, VendorDto } from "../events/types";
 
 interface SessionResponse {
@@ -180,11 +181,14 @@ function VendorQnaSection({ tenderId, token }: { tenderId: string; token: string
 
   const askMut = useMutation({
     mutationFn: async (question: string) => {
-      const res = await fetch(`/api/tenders/${tenderId}/qna?token=${encodeURIComponent(token)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
-      });
+      const res = await fetch(
+        withBasePath(`/api/tenders/${tenderId}/qna?token=${encodeURIComponent(token)}`),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        },
+      );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(

@@ -3,6 +3,7 @@ import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiFetch } from "../api/client";
 import { useAuth } from "../auth/auth-context";
+import { withBasePath } from "../base-path";
 import {
   BUDGET_CATEGORIES,
   type BudgetCategory,
@@ -152,7 +153,7 @@ export function BudgetPanel({ event }: BudgetPanelProps) {
     mutationFn: async ({ id, file }: { id: string; file: File }) => {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch(`/api/budget/${id}/invoice/upload`, {
+      const res = await fetch(withBasePath(`/api/budget/${id}/invoice/upload`), {
         method: "POST",
         body: fd,
         credentials: "include",

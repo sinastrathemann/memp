@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider } from "./auth/auth-context";
 import { ProtectedRoute } from "./auth/protected-route";
+import { BASE_PATH } from "./base-path";
 import { Sidebar } from "./components/sidebar";
 import AdminUsersPage from "./pages/admin-users";
 import BlueprintsPage from "./pages/blueprints";
@@ -112,7 +113,10 @@ function Shell() {
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      {/* basename: hinter dem Agent Hub liegt die App unter /<slug>/. Ohne den
+          Präfix schreibt der Router wurzel-absolute Pfade in die Adresszeile und
+          der Slug geht bei der ersten Navigation verloren. */}
+      <BrowserRouter basename={BASE_PATH}>
         <AuthProvider>
           <Shell />
         </AuthProvider>

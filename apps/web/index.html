@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>mEXP — mindsquare Experience Platform</title>
+    <!--
+      Pfad, den der SERVER für diesen Request gesehen hat. Der Agent Hub hängt die
+      App unter /<slug>/ ein und strippt den Slug, bevor der Request den Container
+      erreicht — einen X-Forwarded-Prefix-Header gibt es laut Hub-Vertrag A.2.1
+      bewusst nicht. Der Browser kennt den vollen Pfad, der Server den gestrippten;
+      aus der Differenz berechnet src/base-path.ts den Einhängepunkt exakt.
+      Wird von apps/api/src/static-serve.ts beim Ausliefern ersetzt; im Vite-Dev
+      bleibt der Platzhalter stehen und base-path.ts fällt auf "" zurück.
+    -->
+    <meta name="mexp-server-path" content="__MEXP_SERVER_PATH__" />
     <script src="/embed/waffle.js" defer></script>
   </head>
   <body>

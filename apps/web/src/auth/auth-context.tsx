@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import { apiFetch } from "../api/client";
+import { withBasePath } from "../base-path";
 import type { AuthUser, MeRoles, RoleName } from "./types";
 
 interface AuthContextValue {
@@ -26,7 +27,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
  * Anmeldung neu. Es gibt bewusst keinen eigenen Login-/Logout-Endpunkt mehr.
  */
 async function fetchMe(): Promise<AuthUser | null> {
-  const res = await fetch("/api/me");
+  const res = await fetch(withBasePath("/api/me"));
   if (res.status === 401) {
     window.location.href = "/auth/logout";
     return null;
