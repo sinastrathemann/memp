@@ -75,6 +75,27 @@ ist vorhanden.
 Container → Run workflow`), solange das GitHub-Repo besteht. Es publiziert in
 beide Registries.
 
+## Ersten Admin einrichten
+
+In einer frischen Instanz gibt es keinen mEXP-Admin: `AppHub.Admin` vergibt der
+Hub, und die interne Rollenvergabe setzt einen bestehenden Admin voraus. Für
+diesen Fall gibt es einen Notausgang.
+
+Im Hub unter **App-Detailseite → Container-Einstellungen** setzen:
+
+```
+MEXP_BOOTSTRAP_ADMINS=vorname.nachname@mindsquare.de
+```
+
+Danach **Neue Version einspielen**. Wer in der Liste steht, bekommt beim
+Anmelden `admin` und kann unter *Verwaltung → Nutzer* Rollen vergeben.
+
+Jede so vergebene Rolle landet als `warn` im Container-Log
+(`admin granted via MEXP_BOOTSTRAP_ADMINS`).
+
+> **Wieder entfernen,** sobald im Hub jemand `AppHub.Admin` trägt oder die
+> Rollen intern vergeben sind. Der Notausgang soll kein Dauerzustand werden.
+
 ## Health Checks
 - API: `GET http://<host>:3000/health`
 - Postgres: `pg_isready -U mexp -d mexp`

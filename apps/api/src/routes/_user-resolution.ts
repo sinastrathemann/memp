@@ -4,9 +4,12 @@
  * (X-MSQ-User-Id / X-MSQ-Roles / isHubAdmin) — welche mEXP-Rechte diese Person innerhalb der
  * App hat, verwalten wir selbst, keyed by Hub-User-Id.
  */
-import { getHubUser } from "@mexp/auth";
+import { getHubUser, isBootstrapAdmin } from "@mexp/auth";
+import { rootLogger } from "@mexp/shared";
 import type { Context, MiddlewareHandler } from "hono";
 import { persistentMap } from "../dev-persistence.js";
+
+const log = rootLogger.child({ module: "api/user-resolution" });
 
 export interface MexpUser {
   id: string;
@@ -47,11 +50,21 @@ export const mexpUserStore = persistentMap<MexpUser>("memp-users");
 /**
  * Liefert die mEXP-internen Rollen des aktuell eingeloggten Hub-Users.
  * - Hub-Admins (isHubAdmin === true) bekommen immer ["admin"] — unconditional override.
+ * - Bootstrap-Admins (MEXP_BOOTSTRAP_ADMINS, siehe isBootstrapAdmin) bekommen ebenfalls
+ *   ["admin"] — Notausgang, solange im Hub niemand AppHub.Admin hat.
  * - Unbekannte Hub-User werden beim ersten Request automatisch mit Rolle "participant" registriert.
  */
 export function resolveMexpRoles(c: Context): string[] {
   const hub = getHubUser(c);
   if (hub.isHubAdmin) return ["admin"];
+
+  // Notausgang, solange im Hub niemand AppHub.Admin hat. Absichtlich laut:
+  // sonst raetselt spaeter jemand, woher die Rechte kamen. E-Mail bleibt
+  // draussen (PII), die Hub-User-Id genuegt zur Zuordnung.
+  if (isBootstrapAdmin(hub.email)) {
+    log.warn({ userId: hub.id }, "admin granted via MEXP_BOOTSTRAP_ADMINS");
+    return ["admin"];
+  }
 
   const known = mexpUserStore.get(hub.id);
   if (known) return known.roles;
