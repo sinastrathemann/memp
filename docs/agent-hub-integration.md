@@ -9,11 +9,11 @@ Alle Felder zum Copy-Paste ins Hub-Admin-Formular:
 | Feld | Wert |
 |---|---|
 | Anzeigename | mEXP — Experience |
-| Slug | `mexp` |
+| Slug | `mindsquare-experience-plattform` |
 | Beschreibung | mindsquare Experience Platform — Events, Budget, Anmeldungen, Reporting |
 | Icon | 📅 |
 | Kategorie | `hr` |
-| Image-Ref | `ghcr.io/sinastrathemann/mexp:latest` |
+| Image-Ref | `mindcode.mindsquare.de/sina.strathemann/mexp:latest` |
 | Container-Port | `3000` (aus `EXPOSE` im Image) |
 | Health-Pfad | `/health` |
 | Timeout | `30s` (Standard) |

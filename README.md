@@ -4,14 +4,17 @@ Interne HR-zentrierte Event-Plattform für mindsquare AG. Deckt den Lifecycle in
 
 ## Container
 
-- 📦 **Package**: https://github.com/sinastrathemann/mexp/pkgs/container/mexp
+- 📦 **Package**: https://mindcode.mindsquare.de/sina.strathemann/-/packages/container/mexp
 - Image-Ref zum Einhängen in den Agent Hub:
 
   ```
-  ghcr.io/sinastrathemann/mexp:latest
+  mindcode.mindsquare.de/sina.strathemann/mexp:latest
   ```
 
-Für eine pinned Version einen Release-Tag verwenden (z. B. `:v1.0.0`).
+Für eine pinned Version den SHA-Tag des gewünschten Commits verwenden (z. B. `:sha-2b079d0`).
+
+Das Image wird **lokal** gebaut und veröffentlicht — der mindcode-Runner kann
+keine Container bauen. Der Ablauf steht im [Runbook](docs/runbook.md#deploy).
 
 ## Deployment
 
