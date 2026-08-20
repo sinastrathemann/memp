@@ -1,0 +1,51 @@
+name: CI
+
+# Forgejo-Variante der Pipeline. Forgejo bevorzugt .forgejo/workflows/ gegenueber
+# .github/workflows/ — beide Server lesen also ihren eigenen Satz Dateien, ohne
+# Server-Erkennung im Workflow. Inhaltlich identisch zu .github/workflows/ci.yml;
+# aendert sich dort etwas, muss es hier nachgezogen werden.
+#
+# Runner: aito-runner-01, Image catthehacker/ubuntu:act-latest.
+# Die Labels `docker` und `ubuntu-latest` sind dort synonym (How To 12.1).
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Keine `version:`-Angabe — ab action-setup@v6 ist eine zweite Versionsquelle
+      # neben `packageManager` in der package.json ein harter Fehler.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages (produces dist/ for cross-package type resolution)
+        run: pnpm --filter "./packages/*" build
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm -r test --if-present
+        env:
+          NODE_ENV: test

@@ -17,20 +17,14 @@ permissions:
 
 jobs:
   build-and-push:
-    # Auf Forgejo (mindcode) uebersprungen: der dortige Runner hat KEINEN
-    # Docker-Daemon. Verifiziert am 2026-08-20, Lauf #62:
+    # Diese Datei ist der GitHub-Pfad. Der Build auf mindcode liegt in
+    # .forgejo/workflows/publish-container.yml und braucht dort einen
+    # Docker-in-Docker-Sidecar, weil der Runner nur das Docker-CLI mitbringt
+    # (How To 12.5).
     #
-    #   failed to connect to the docker API at unix:///var/run/docker.sock;
-    #   dial unix /var/run/docker.sock: connect: no such file or directory
-    #
-    # Das ist Runner-Infrastruktur, nicht im Repo loesbar. Der Container-Build
-    # bleibt deshalb bis auf Weiteres bei GitHub -- von dort werden ohnehin
-    # BEIDE Registries beliefert, der Hub zieht also weiterhin von mindcode.
-    #
-    # Sobald mindcode einen Runner mit Docker-Zugriff (oder einen rootless
-    # Builder wie Buildah/Kaniko) bereitstellt, genuegt es, diese eine
-    # Bedingung zu entfernen -- die Registry-Logik unten ist bereits fuer
-    # beide Server gebaut.
+    # Forgejo bevorzugt .forgejo/workflows/ gegenueber .github/workflows/, diese
+    # Bedingung sollte dort also gar nicht mehr greifen. Sie bleibt als Netz
+    # stehen, damit bei abweichendem Verhalten kein doppelter Build laeuft.
     if: ${{ !contains(github.server_url, 'mindcode') }}
     runs-on: ubuntu-latest
     env:
