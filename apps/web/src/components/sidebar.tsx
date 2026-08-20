@@ -63,24 +63,13 @@ export function Sidebar() {
         )}
         {hasRole("admin", "manager", "event_office", "werkstudent") && (
           <NavLink
-            to="/blueprints"
+            to="/admin"
             className={({ isActive }) => `ms-sidebar-link${isActive ? " active" : ""}`}
           >
             <span className="ms-sidebar-icon" aria-hidden="true">
-              📋
+              ⚙️
             </span>
-            {t("blueprints.navLink")}
-          </NavLink>
-        )}
-        {hasRole("admin") && (
-          <NavLink
-            to="/admin/users"
-            className={({ isActive }) => `ms-sidebar-link${isActive ? " active" : ""}`}
-          >
-            <span className="ms-sidebar-icon" aria-hidden="true">
-              👥
-            </span>
-            {t("admin.usersLink")}
+            {t("admin.navLink")}
           </NavLink>
         )}
       </nav>

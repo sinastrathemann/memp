@@ -4,8 +4,7 @@ import { AuthProvider } from "./auth/auth-context";
 import { ProtectedRoute } from "./auth/protected-route";
 import { BASE_PATH } from "./base-path";
 import { Sidebar } from "./components/sidebar";
-import AdminUsersPage from "./pages/admin-users";
-import BlueprintsPage from "./pages/blueprints";
+import AdminPage from "./pages/admin";
 import DashboardPage from "./pages/dashboard";
 import EventCreatePage from "./pages/event-create";
 import EventDetailPage from "./pages/event-detail";
@@ -71,19 +70,13 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* Alter Pfad — gespeicherte Links sollen nicht ins Leere laufen */}
+      <Route path="/blueprints" element={<Navigate to="/admin/blueprints" replace />} />
       <Route
-        path="/blueprints"
+        path="/admin/*"
         element={
           <ProtectedRoute roles={["admin", "manager", "event_office", "werkstudent"]}>
-            <BlueprintsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/users"
-        element={
-          <ProtectedRoute roles={["admin"]}>
-            <AdminUsersPage />
+            <AdminPage />
           </ProtectedRoute>
         }
       />
