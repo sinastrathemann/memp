@@ -12,7 +12,8 @@ Interne HR-zentrierte Event-Plattform für mindsquare AG. Deckt den Lifecycle vo
 
 ## Deployment
 - **Target**: mindsquare Agent Hub (Managed) — hosted at `https://<hub-domain>/mexp/`
-- **Container**: `ghcr.io/sinastrathemann/mexp:latest` (auto-published via GH Actions on push to `main`)
+- **Container**: `mindcode.mindsquare.de/sina.strathemann/mexp:latest` — der Hub zieht von mindcode, nicht von GHCR. Image wird **lokal** gebaut und gepusht (Runbook § Deploy); der mindcode-Runner kann keine Container bauen.
+- **Repo**: kanonisch auf mindCode (`mindcode.mindsquare.de/sina.strathemann/mexp`); GitHub ist nur noch Spiegel.
 - **Auth**: SSO via Hub → Identity in `X-MSQ-*`-Headern; kein eigenes Login-Form
 - **State**: Docker-Volume `appdata-mexp-data` → `/app/data`
 - **Local Dev**: `AUTH_MODE=dev-bypass` mit User aus `config/dev-user.yaml`
