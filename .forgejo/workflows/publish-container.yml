@@ -29,12 +29,15 @@ jobs:
         image: docker:24-dind
         env:
           DOCKER_TLS_CERTDIR: ""
-        options: >-
-          --privileged
-          --health-cmd="docker info"
-          --health-interval=5s
-          --health-timeout=2s
-          --health-retries=10
+        # BEWUSST ohne --health-* (abweichend von How To 12.5): der act_runner
+        # v13.0.0 wartet die Wiederholungen nicht ab. Er prueft den Zustand
+        # einmal, und ein Daemon, der noch hochfaehrt, gilt sofort als kaputt --
+        # Lauf #68 brach nach 3s ab mit
+        #   service [docker]: container health check ... is not healthy
+        # obwohl --health-retries=10 bei --health-interval=5s rund 50s ergeben
+        # muesste. Ohne Health-Check startet der Sidecar durch; auf die
+        # Bereitschaft wartet der Schritt "Wait for Docker daemon" unten.
+        options: --privileged
     env:
       DOCKER_HOST: tcp://docker:2375
       REGISTRY: mindcode.mindsquare.de
@@ -44,11 +47,19 @@ jobs:
 
       - name: Wait for Docker daemon
         run: |
-          for i in $(seq 1 20); do
-            docker info >/dev/null 2>&1 && break
+          # Bis zu 90s: der Sidecar braucht typisch 5-10s, aber ein kalter
+          # Image-Pull kann laenger dauern. Schlaegt es fehl, brechen wir mit
+          # klarer Meldung ab statt in einen Folgefehler zu laufen.
+          for i in $(seq 1 45); do
+            if docker info >/dev/null 2>&1; then
+              echo "Docker-Daemon bereit nach ~$((i * 2))s"
+              docker version
+              exit 0
+            fi
             sleep 2
           done
-          docker version
+          echo "Docker-Daemon im Sidecar nach 90s nicht erreichbar (DOCKER_HOST=${DOCKER_HOST})." >&2
+          exit 1
 
       - name: Log in to mindcode registry
         env:
