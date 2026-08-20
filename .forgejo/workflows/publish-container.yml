@@ -1,15 +1,9 @@
 name: Publish Container
 
-# Baut das Image auf mindcode und veroeffentlicht es in die dortige Registry.
-#
-# Der Runner (catthehacker/ubuntu:act-latest) bringt zwar das Docker-CLI mit,
-# aber KEINEN Daemon — ohne Sidecar scheitert jeder Build mit
-#   dial unix /var/run/docker.sock: connect: no such file or directory
-# Die Docker-in-Docker-Konfiguration unten folgt How To Abschnitt 12.5.
-#
-# Bewusst mit nackten docker-Befehlen statt docker/build-push-action: weniger
-# Abhaengigkeiten, die auf der Instanz aufloesbar sein muessen, und der Weg,
-# den die Anleitung vorgibt.
+# Docker-in-Docker WORTGETREU nach How To Abschnitt 12.5 -- inklusive der
+# --health-*-Optionen und der Adressierung ueber den Service-Namen "docker".
+# Frueher bin ich davon abgewichen (Health-Check entfernt, IP-Suche eingebaut);
+# das war Interpretation, nicht die Anleitung.
 
 on:
   push:
@@ -29,95 +23,30 @@ jobs:
         image: docker:24-dind
         env:
           DOCKER_TLS_CERTDIR: ""
-        # BEWUSST ohne --health-* (abweichend von How To 12.5): der act_runner
-        # v13.0.0 wartet die Wiederholungen nicht ab. Er prueft den Zustand
-        # einmal, und ein Daemon, der noch hochfaehrt, gilt sofort als kaputt --
-        # Lauf #68 brach nach 3s ab mit
-        #   service [docker]: container health check ... is not healthy
-        # obwohl --health-retries=10 bei --health-interval=5s rund 50s ergeben
-        # muesste. Ohne Health-Check startet der Sidecar durch; auf die
-        # Bereitschaft wartet der Schritt "Wait for Docker daemon" unten.
-        options: --privileged
+        options: >-
+          --privileged
+          --health-cmd="docker info"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=10
     env:
       DOCKER_HOST: tcp://docker:2375
-      REGISTRY: mindcode.mindsquare.de
       IMAGE: mindcode.mindsquare.de/sina.strathemann/mexp
     steps:
       - uses: actions/checkout@v4
 
       - name: Wait for Docker daemon
         run: |
-          # Historie dieses Schritts:
-          #   #70  90s Timeout, Ursache verschluckt
-          #   #72  "docker" nicht aufloesbar (lookup ... server misbehaving)
-          #   #74  IP-Suche auf Port 2375 fand nichts -- 12min, weil die
-          #        Schleife zu geduldig war
-          #
-          # Naechster Verdacht: act_runner reicht das `env:` des Service-
-          # Containers moeglicherweise nicht durch. Ohne DOCKER_TLS_CERTDIR=""
-          # bleibt dind bei seinem Standard und lauscht per TLS auf 2376 statt
-          # unverschluesselt auf 2375 -- dann ist auf 2375 nichts zu finden,
-          # egal unter welcher Adresse.
-          #
-          # Dieser Schritt klaert das in Sekunden statt in Minuten: erst ein
-          # Portscan ueber das eigene /24 auf BEIDE Ports, dann ein Versuch mit
-          # dem gefundenen Endpunkt. Harte Obergrenze 90s.
-
-          MY_IP="$(getent hosts "$(hostname)" | awk '{print $1}' | head -1)"
-          BASE="${MY_IP%.*}"
-          echo "Eigene Adresse: ${MY_IP:-<unbekannt>}  Netz: ${BASE:-?}.0/24"
-
-          port_open() {
-            timeout 1 bash -c "exec 3<>/dev/tcp/$1/$2" 2>/dev/null
-          }
-
-          echo
-          echo "===== Portscan im Job-Netz ====="
-          DEADLINE=$(( $(date +%s) + 90 ))
-          HOST_2375=""
-          HOST_2376=""
-          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
-            for n in $(seq 1 12); do
-              IP="${BASE}.${n}"
-              [ "$IP" = "$MY_IP" ] && continue
-              if port_open "$IP" 2375; then
-                echo "  ${IP}:2375 offen"
-                HOST_2375="$IP"
-              fi
-              if port_open "$IP" 2376; then
-                echo "  ${IP}:2376 offen (TLS)"
-                HOST_2376="$IP"
-              fi
-            done
-            [ -n "$HOST_2375" ] || [ -n "$HOST_2376" ] && break
-            sleep 3
+          for i in $(seq 1 20); do
+            docker info >/dev/null 2>&1 && break
+            sleep 2
           done
 
-          if [ -n "$HOST_2375" ]; then
-            echo
-            echo "Docker-API unverschluesselt auf ${HOST_2375}:2375"
-            export DOCKER_HOST="tcp://${HOST_2375}:2375"
-            docker version
-            echo "DOCKER_HOST=tcp://${HOST_2375}:2375" >> "$GITHUB_ENV"
-            exit 0
-          fi
-
-          echo
-          if [ -n "$HOST_2376" ]; then
-            echo "Nur der TLS-Port 2376 ist offen (${HOST_2376})." >&2
-            echo "Damit ist bestaetigt: der Sidecar laeuft, aber das env:" >&2
-            echo "DOCKER_TLS_CERTDIR=\"\" kommt bei ihm nicht an." >&2
-          else
-            echo "Im gesamten Netz ${BASE}.1-12 ist weder 2375 noch 2376 offen." >&2
-            echo "Der Sidecar ist aus diesem Container nicht erreichbar." >&2
-          fi
-          exit 1
+      - name: Show docker version
+        run: docker version
 
       - name: Log in to mindcode registry
         env:
-          # GITEA_TOKEN stellt Forgejo pro Lauf bereit. Gibt die Instanz ihn nicht
-          # fuer die Paket-Registry frei, greift MINDCODE_TOKEN aus den Repo-Secrets
-          # (How To 12.9: Einstellungen -> Actions -> Secrets).
           TOKEN: ${{ secrets.GITEA_TOKEN || secrets.MINDCODE_TOKEN }}
         run: |
           if [ -z "${TOKEN}" ]; then
@@ -125,38 +54,25 @@ jobs:
             echo "Secret anlegen: Einstellungen -> Actions -> Secrets -> MINDCODE_TOKEN" >&2
             exit 1
           fi
-          echo "${TOKEN}" | docker login "${REGISTRY}" -u "${{ github.actor }}" --password-stdin
-
-      - name: Tags bestimmen
-        id: tags
-        run: |
-          SHORT_SHA="$(echo "${{ github.sha }}" | cut -c1-7)"
-          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "extra=-t ${IMAGE}:latest" >> "$GITHUB_OUTPUT"
-            echo "version=latest" >> "$GITHUB_OUTPUT"
-          else
-            # Tag-Push: refs/tags/v1.2.3 -> 1.2.3
-            VERSION="${GITHUB_REF#refs/tags/v}"
-            echo "extra=-t ${IMAGE}:${VERSION} -t ${IMAGE}:latest" >> "$GITHUB_OUTPUT"
-            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          fi
+          echo "${TOKEN}" | docker login mindcode.mindsquare.de \
+            -u "${{ github.actor }}" --password-stdin
 
       - name: Build image
         run: |
+          SHORT_SHA="$(echo "${{ github.sha }}" | cut -c1-7)"
           docker build \
             -f docker/Dockerfile \
-            -t "${IMAGE}:sha-${{ steps.tags.outputs.short_sha }}" \
-            ${{ steps.tags.outputs.extra }} \
-            --build-arg "APP_VERSION=${{ steps.tags.outputs.version }}" \
+            -t "${IMAGE}:sha-${SHORT_SHA}" \
+            -t "${IMAGE}:latest" \
+            --build-arg "APP_VERSION=latest" \
             --label "org.opencontainers.image.revision=${{ github.sha }}" \
             --label "org.opencontainers.image.source=https://mindcode.mindsquare.de/sina.strathemann/mexp" \
             .
 
-      - name: Smoke-Test — /health muss ohne Auth antworten
+      - name: Smoke-test container
         run: |
-          docker run -d --name mexp-smoke -e AUTH_MODE=hub \
-            "${IMAGE}:sha-${{ steps.tags.outputs.short_sha }}"
+          SHORT_SHA="$(echo "${{ github.sha }}" | cut -c1-7)"
+          docker run -d --name mexp-smoke -e AUTH_MODE=hub "${IMAGE}:sha-${SHORT_SHA}"
           for i in $(seq 1 20); do
             docker exec mexp-smoke wget -qO- http://127.0.0.1:3000/health && break
             sleep 2
