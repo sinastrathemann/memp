@@ -81,7 +81,25 @@
     "csvImportResultNoEmail": "✓ {{total}} rows · {{created}} new · {{updated}} updated · {{skippedNoEmail}} skipped (no email)",
     "csvImportError": "Error: {{message}}",
     "csvDetectedHeaders": "Detected columns: {{count}}",
-    "csvBadge": "CSV import"
+    "csvBadge": "CSV import",
+    "navLink": "Administration",
+    "title": "Administration",
+    "tabUsers": "Users",
+    "tabBlueprints": "Templates",
+    "tabImport": "Import",
+    "importTitle": "Import data",
+    "colLastSeen": "Last seen",
+    "neverSeen": "—",
+    "roleLegendTitle": "What the roles mean",
+    "roleDesc": {
+      "read_only": "sees events, cannot change anything",
+      "participant": "sees published events and registers",
+      "werkstudent": "creates events and maintains templates",
+      "event_office": "manages portfolio, participants and reports",
+      "budget_owner": "approves budgets",
+      "manager": "manages portfolio and reports",
+      "admin": "additionally manages users and roles"
+    }
   },
   "events": {
     "navLink": "Events",

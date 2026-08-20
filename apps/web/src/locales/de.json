@@ -81,7 +81,25 @@
     "csvImportResultNoEmail": "✓ {{total}} Zeilen · {{created}} neu · {{updated}} aktualisiert · {{skippedNoEmail}} ohne E-Mail übersprungen",
     "csvImportError": "Fehler: {{message}}",
     "csvDetectedHeaders": "Erkannte Spalten: {{count}}",
-    "csvBadge": "CSV-Import"
+    "csvBadge": "CSV-Import",
+    "navLink": "Verwaltung",
+    "title": "Verwaltung",
+    "tabUsers": "Nutzer",
+    "tabBlueprints": "Vorlagen",
+    "tabImport": "Import",
+    "importTitle": "Daten übernehmen",
+    "colLastSeen": "Zuletzt gesehen",
+    "neverSeen": "—",
+    "roleLegendTitle": "Was die Rollen bedeuten",
+    "roleDesc": {
+      "read_only": "sieht Events, kann nichts ändern",
+      "participant": "sieht veröffentlichte Events und meldet sich an",
+      "werkstudent": "legt Events an und pflegt Vorlagen",
+      "event_office": "verwaltet Portfolio, Teilnehmende und Auswertungen",
+      "budget_owner": "gibt Budgets frei",
+      "manager": "verwaltet Portfolio und Auswertungen",
+      "admin": "verwaltet zusätzlich Nutzer und Rollen"
+    }
   },
   "events": {
     "navLink": "Events",
