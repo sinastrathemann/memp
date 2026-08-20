@@ -47,19 +47,42 @@ jobs:
 
       - name: Wait for Docker daemon
         run: |
-          # Bis zu 90s: der Sidecar braucht typisch 5-10s, aber ein kalter
-          # Image-Pull kann laenger dauern. Schlaegt es fehl, brechen wir mit
-          # klarer Meldung ab statt in einen Folgefehler zu laufen.
-          for i in $(seq 1 45); do
-            if docker info >/dev/null 2>&1; then
-              echo "Docker-Daemon bereit nach ~$((i * 2))s"
-              docker version
-              exit 0
-            fi
-            sleep 2
+          # Lauf #70 lief hier 90s ins Leere. Ursache unklar, weil die
+          # Fehlermeldung verschluckt wurde. Jetzt wird sie ausgegeben, und
+          # zusaetzlich geprueft, unter welchem Namen der Sidecar ueberhaupt
+          # erreichbar ist -- act_runner haengt Service-Container ins
+          # WORKFLOW-Netz, der Alias ist aber nicht garantiert "docker".
+          echo "===== Netzwerk-Sicht des Job-Containers ====="
+          cat /etc/hosts || true
+          echo "--- Namensaufloesung"
+          for h in docker localhost 127.0.0.1; do
+            printf '  %-12s -> ' "$h"
+            getent hosts "$h" 2>/dev/null | head -1 || echo "(nicht aufloesbar)"
           done
-          echo "Docker-Daemon im Sidecar nach 90s nicht erreichbar (DOCKER_HOST=${DOCKER_HOST})." >&2
-          exit 1
+
+          echo
+          echo "===== Erreichbarkeit der Kandidaten ====="
+          CANDIDATES="tcp://docker:2375 tcp://localhost:2375 tcp://127.0.0.1:2375"
+          FOUND=""
+          for i in $(seq 1 20); do
+            for host in $CANDIDATES; do
+              if DOCKER_HOST="$host" docker info >/dev/null 2>&1; then
+                FOUND="$host"
+                break 2
+              fi
+            done
+            sleep 3
+          done
+
+          if [ -z "$FOUND" ]; then
+            echo "Kein Docker-Daemon erreichbar. Letzter Versuch im Klartext:" >&2
+            DOCKER_HOST=tcp://docker:2375 docker info || true
+            exit 1
+          fi
+
+          echo "Daemon erreichbar unter: $FOUND"
+          echo "DOCKER_HOST=$FOUND" >> "$GITHUB_ENV"
+          DOCKER_HOST="$FOUND" docker version
 
       - name: Log in to mindcode registry
         env:
