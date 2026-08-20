@@ -8,3 +8,5 @@ export {
 } from "./hub-middleware.js";
 
 export { loadDevUser, type DevUser } from "./dev-user-config.js";
+
+export { isBootstrapAdmin, parseBootstrapAdmins } from "./bootstrap-admins.js";
