@@ -8,6 +8,7 @@ import { getHubUser, isBootstrapAdmin } from "@mexp/auth";
 import { rootLogger } from "@mexp/shared";
 import type { Context, MiddlewareHandler } from "hono";
 import { persistentMap } from "../dev-persistence.js";
+import { shouldTouchLastSeen } from "./_last-seen.js";
 
 const log = rootLogger.child({ module: "api/user-resolution" });
 
@@ -19,6 +20,9 @@ export interface MexpUser {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Letzter authentifizierter Request dieser Person. Hoechstens stuendlich
+   *  fortgeschrieben — siehe _last-seen.ts. */
+  lastSeenAt?: string;
   // --- Personio-Sync (optional; nur gesetzt für User, die aus Personio stammen oder
   // per Sync mit einem Personio-Employee verknüpft wurden — siehe admin-personio.ts).
   // Bestehende User ohne Personio-Bezug bleiben unangetastet: alle Felder optional. ---
@@ -67,7 +71,13 @@ export function resolveMexpRoles(c: Context): string[] {
   }
 
   const known = mexpUserStore.get(hub.id);
-  if (known) return known.roles;
+  if (known) {
+    const now = Date.now();
+    if (shouldTouchLastSeen(known.lastSeenAt, now)) {
+      mexpUserStore.set(hub.id, { ...known, lastSeenAt: new Date(now).toISOString() });
+    }
+    return known.roles;
+  }
 
   const now = new Date().toISOString();
   const fresh: MexpUser = {
@@ -78,6 +88,7 @@ export function resolveMexpRoles(c: Context): string[] {
     isActive: true,
     createdAt: now,
     updatedAt: now,
+    lastSeenAt: now,
   };
   mexpUserStore.set(hub.id, fresh);
   return fresh.roles;
