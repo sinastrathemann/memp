@@ -1,0 +1,104 @@
+name: Publish Container
+
+# Baut das Image auf mindcode und veroeffentlicht es in die dortige Registry.
+#
+# Der Runner (catthehacker/ubuntu:act-latest) bringt zwar das Docker-CLI mit,
+# aber KEINEN Daemon — ohne Sidecar scheitert jeder Build mit
+#   dial unix /var/run/docker.sock: connect: no such file or directory
+# Die Docker-in-Docker-Konfiguration unten folgt How To Abschnitt 12.5.
+#
+# Bewusst mit nackten docker-Befehlen statt docker/build-push-action: weniger
+# Abhaengigkeiten, die auf der Instanz aufloesbar sein muessen, und der Weg,
+# den die Anleitung vorgibt.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:24-dind
+        env:
+          DOCKER_TLS_CERTDIR: ""
+        options: >-
+          --privileged
+          --health-cmd="docker info"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=10
+    env:
+      DOCKER_HOST: tcp://docker:2375
+      REGISTRY: mindcode.mindsquare.de
+      IMAGE: mindcode.mindsquare.de/sina.strathemann/mexp
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for Docker daemon
+        run: |
+          for i in $(seq 1 20); do
+            docker info >/dev/null 2>&1 && break
+            sleep 2
+          done
+          docker version
+
+      - name: Log in to mindcode registry
+        env:
+          # GITEA_TOKEN stellt Forgejo pro Lauf bereit. Gibt die Instanz ihn nicht
+          # fuer die Paket-Registry frei, greift MINDCODE_TOKEN aus den Repo-Secrets
+          # (How To 12.9: Einstellungen -> Actions -> Secrets).
+          TOKEN: ${{ secrets.GITEA_TOKEN || secrets.MINDCODE_TOKEN }}
+        run: |
+          if [ -z "${TOKEN}" ]; then
+            echo "Weder GITEA_TOKEN noch MINDCODE_TOKEN gesetzt." >&2
+            echo "Secret anlegen: Einstellungen -> Actions -> Secrets -> MINDCODE_TOKEN" >&2
+            exit 1
+          fi
+          echo "${TOKEN}" | docker login "${REGISTRY}" -u "${{ github.actor }}" --password-stdin
+
+      - name: Tags bestimmen
+        id: tags
+        run: |
+          SHORT_SHA="$(echo "${{ github.sha }}" | cut -c1-7)"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "extra=-t ${IMAGE}:latest" >> "$GITHUB_OUTPUT"
+            echo "version=latest" >> "$GITHUB_OUTPUT"
+          else
+            # Tag-Push: refs/tags/v1.2.3 -> 1.2.3
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            echo "extra=-t ${IMAGE}:${VERSION} -t ${IMAGE}:latest" >> "$GITHUB_OUTPUT"
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build image
+        run: |
+          docker build \
+            -f docker/Dockerfile \
+            -t "${IMAGE}:sha-${{ steps.tags.outputs.short_sha }}" \
+            ${{ steps.tags.outputs.extra }} \
+            --build-arg "APP_VERSION=${{ steps.tags.outputs.version }}" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.source=https://mindcode.mindsquare.de/sina.strathemann/mexp" \
+            .
+
+      - name: Smoke-Test — /health muss ohne Auth antworten
+        run: |
+          docker run -d --name mexp-smoke -e AUTH_MODE=hub \
+            "${IMAGE}:sha-${{ steps.tags.outputs.short_sha }}"
+          for i in $(seq 1 20); do
+            docker exec mexp-smoke wget -qO- http://127.0.0.1:3000/health && break
+            sleep 2
+          done
+          docker rm -f mexp-smoke
+
+      - name: Push image
+        run: docker push --all-tags "${IMAGE}"
