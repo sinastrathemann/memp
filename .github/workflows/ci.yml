@@ -14,7 +14,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Keine `version:`-Angabe — ab action-setup@v6 ist eine zweite Versionsquelle
       # neben `packageManager` in der package.json ein harter Fehler.
