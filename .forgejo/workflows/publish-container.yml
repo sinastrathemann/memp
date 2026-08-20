@@ -47,59 +47,71 @@ jobs:
 
       - name: Wait for Docker daemon
         run: |
-          # Lauf #70 lief hier 90s ins Leere. Ursache unklar, weil die
-          # Fehlermeldung verschluckt wurde. Jetzt wird sie ausgegeben, und
-          # zusaetzlich geprueft, unter welchem Namen der Sidecar ueberhaupt
-          # erreichbar ist -- act_runner haengt Service-Container ins
-          # WORKFLOW-Netz, der Alias ist aber nicht garantiert "docker".
-          echo "===== Netzwerk-Sicht des Job-Containers ====="
-          cat /etc/hosts || true
-          echo "--- Namensaufloesung"
-          for h in docker localhost 127.0.0.1; do
-            printf '  %-12s -> ' "$h"
-            getent hosts "$h" 2>/dev/null | head -1 || echo "(nicht aufloesbar)"
-          done
+          # Historie dieses Schritts:
+          #   #70  90s Timeout, Ursache verschluckt
+          #   #72  "docker" nicht aufloesbar (lookup ... server misbehaving)
+          #   #74  IP-Suche auf Port 2375 fand nichts -- 12min, weil die
+          #        Schleife zu geduldig war
+          #
+          # Naechster Verdacht: act_runner reicht das `env:` des Service-
+          # Containers moeglicherweise nicht durch. Ohne DOCKER_TLS_CERTDIR=""
+          # bleibt dind bei seinem Standard und lauscht per TLS auf 2376 statt
+          # unverschluesselt auf 2375 -- dann ist auf 2375 nichts zu finden,
+          # egal unter welcher Adresse.
+          #
+          # Dieser Schritt klaert das in Sekunden statt in Minuten: erst ein
+          # Portscan ueber das eigene /24 auf BEIDE Ports, dann ein Versuch mit
+          # dem gefundenen Endpunkt. Harte Obergrenze 90s.
 
-          # Lauf #72: "docker" ist NICHT aufloesbar --
-          #   lookup docker on 127.0.0.11:53: server misbehaving
-          # Der Sidecar laeuft, aber der DNS-Alias fehlt. Deshalb suchen wir ihn
-          # ueber die IP: beide Container haengen im selben WORKFLOW-Netz, die
-          # eigene Adresse steht in /etc/hosts (dort war es 172.23.0.2). Wir
-          # klappern die ersten Adressen des /24 ab und nehmen die, die auf der
-          # Docker-API antwortet.
           MY_IP="$(getent hosts "$(hostname)" | awk '{print $1}' | head -1)"
+          BASE="${MY_IP%.*}"
+          echo "Eigene Adresse: ${MY_IP:-<unbekannt>}  Netz: ${BASE:-?}.0/24"
+
+          port_open() {
+            timeout 1 bash -c "exec 3<>/dev/tcp/$1/$2" 2>/dev/null
+          }
+
           echo
-          echo "Eigene Adresse: ${MY_IP:-<unbekannt>}"
-
-          CANDIDATES="tcp://docker:2375"
-          if [ -n "$MY_IP" ]; then
-            BASE="${MY_IP%.*}"
-            for n in 1 2 3 4 5 6 7 8; do
-              CANDIDATES="$CANDIDATES tcp://${BASE}.${n}:2375"
-            done
-          fi
-
-          echo "===== Erreichbarkeit der Kandidaten ====="
-          FOUND=""
-          for i in $(seq 1 20); do
-            for host in $CANDIDATES; do
-              if DOCKER_HOST="$host" timeout 5 docker info >/dev/null 2>&1; then
-                FOUND="$host"
-                break 2
+          echo "===== Portscan im Job-Netz ====="
+          DEADLINE=$(( $(date +%s) + 90 ))
+          HOST_2375=""
+          HOST_2376=""
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            for n in $(seq 1 12); do
+              IP="${BASE}.${n}"
+              [ "$IP" = "$MY_IP" ] && continue
+              if port_open "$IP" 2375; then
+                echo "  ${IP}:2375 offen"
+                HOST_2375="$IP"
+              fi
+              if port_open "$IP" 2376; then
+                echo "  ${IP}:2376 offen (TLS)"
+                HOST_2376="$IP"
               fi
             done
+            [ -n "$HOST_2375" ] || [ -n "$HOST_2376" ] && break
             sleep 3
           done
 
-          if [ -z "$FOUND" ]; then
-            echo "Kein Docker-Daemon erreichbar. Geprueft wurde:" >&2
-            for host in $CANDIDATES; do echo "  $host" >&2; done
-            exit 1
+          if [ -n "$HOST_2375" ]; then
+            echo
+            echo "Docker-API unverschluesselt auf ${HOST_2375}:2375"
+            export DOCKER_HOST="tcp://${HOST_2375}:2375"
+            docker version
+            echo "DOCKER_HOST=tcp://${HOST_2375}:2375" >> "$GITHUB_ENV"
+            exit 0
           fi
 
-          echo "Daemon erreichbar unter: $FOUND"
-          echo "DOCKER_HOST=$FOUND" >> "$GITHUB_ENV"
-          DOCKER_HOST="$FOUND" docker version
+          echo
+          if [ -n "$HOST_2376" ]; then
+            echo "Nur der TLS-Port 2376 ist offen (${HOST_2376})." >&2
+            echo "Damit ist bestaetigt: der Sidecar laeuft, aber das env:" >&2
+            echo "DOCKER_TLS_CERTDIR=\"\" kommt bei ihm nicht an." >&2
+          else
+            echo "Im gesamten Netz ${BASE}.1-12 ist weder 2375 noch 2376 offen." >&2
+            echo "Der Sidecar ist aus diesem Container nicht erreichbar." >&2
+          fi
+          exit 1
 
       - name: Log in to mindcode registry
         env:
