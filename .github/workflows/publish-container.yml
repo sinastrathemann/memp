@@ -17,13 +17,18 @@ permissions:
 
 jobs:
   build-and-push:
-    # Forgejo (mindcode) fuehrt .github/workflows/ ebenfalls aus. Dort scheitert
-    # dieser Job zwangslaeufig, weil secrets.GITHUB_TOKEN nur auf GitHub existiert.
-    # Der Build auf GitHub publiziert ohnehin in BEIDE Registries (siehe images:
-    # weiter unten), ein zweiter Build waere doppelte Arbeit mit doppelter
-    # Fehlerquelle. Beim Abschalten von GitHub wird die Bedingung umgedreht.
-    if: ${{ !contains(github.server_url, 'mindcode') }}
     runs-on: ubuntu-latest
+    env:
+      # Forgejo (mindcode) fuehrt .github/workflows/ ebenfalls aus. Beide Server
+      # bauen dasselbe Image, aber mit unterschiedlichen Zielen und Zugangsdaten:
+      #
+      #   GitHub  -> ghcr.io UND mindcode   (secrets.GITHUB_TOKEN + MINDCODE_TOKEN)
+      #   Forgejo -> nur mindcode           (automatischer Repo-Token)
+      #
+      # Solange beide laufen, ist der Umzug jederzeit umkehrbar. Faellt GitHub
+      # weg, baut Forgejo allein weiter — ohne dass hier etwas geaendert werden
+      # muss.
+      ON_FORGEJO: ${{ contains(github.server_url, 'mindcode') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,26 +37,46 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
+        if: ${{ env.ON_FORGEJO == 'false' }}
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Log in to mindcode (Forgejo registry)
+      - name: Log in to mindcode (von GitHub aus)
+        if: ${{ env.ON_FORGEJO == 'false' }}
         uses: docker/login-action@v4
         with:
           registry: mindcode.mindsquare.de
           username: sina.strathemann
           password: ${{ secrets.MINDCODE_TOKEN }}
 
+      - name: Log in to mindcode (lokal auf Forgejo)
+        if: ${{ env.ON_FORGEJO == 'true' }}
+        uses: docker/login-action@v4
+        with:
+          registry: mindcode.mindsquare.de
+          username: ${{ github.actor }}
+          # GITEA_TOKEN stellt Forgejo pro Lauf automatisch bereit. MINDCODE_TOKEN
+          # ist der Ausweichweg, falls die Instanz den automatischen Token nicht
+          # fuer die Paket-Registry freigibt — dann als Repo-Secret hinterlegen.
+          password: ${{ secrets.GITEA_TOKEN || secrets.MINDCODE_TOKEN }}
+
+      - name: Ziel-Registries bestimmen
+        id: reg
+        run: |
+          if [ "${ON_FORGEJO}" = "true" ]; then
+            printf 'images<<EOF\nmindcode.mindsquare.de/sina.strathemann/mexp\nEOF\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'images<<EOF\nghcr.io/sinastrathemann/mexp\nmindcode.mindsquare.de/sina.strathemann/mexp\nEOF\n' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ghcr.io/sinastrathemann/mexp
-            mindcode.mindsquare.de/sina.strathemann/mexp
+          images: ${{ steps.reg.outputs.images }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
@@ -73,6 +98,3 @@ jobs:
           build-args: |
             APP_VERSION=${{ steps.meta.outputs.version }}
           provenance: true
-          sbom: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
