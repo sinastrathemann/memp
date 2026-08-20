@@ -60,13 +60,30 @@ jobs:
             getent hosts "$h" 2>/dev/null | head -1 || echo "(nicht aufloesbar)"
           done
 
+          # Lauf #72: "docker" ist NICHT aufloesbar --
+          #   lookup docker on 127.0.0.11:53: server misbehaving
+          # Der Sidecar laeuft, aber der DNS-Alias fehlt. Deshalb suchen wir ihn
+          # ueber die IP: beide Container haengen im selben WORKFLOW-Netz, die
+          # eigene Adresse steht in /etc/hosts (dort war es 172.23.0.2). Wir
+          # klappern die ersten Adressen des /24 ab und nehmen die, die auf der
+          # Docker-API antwortet.
+          MY_IP="$(getent hosts "$(hostname)" | awk '{print $1}' | head -1)"
           echo
+          echo "Eigene Adresse: ${MY_IP:-<unbekannt>}"
+
+          CANDIDATES="tcp://docker:2375"
+          if [ -n "$MY_IP" ]; then
+            BASE="${MY_IP%.*}"
+            for n in 1 2 3 4 5 6 7 8; do
+              CANDIDATES="$CANDIDATES tcp://${BASE}.${n}:2375"
+            done
+          fi
+
           echo "===== Erreichbarkeit der Kandidaten ====="
-          CANDIDATES="tcp://docker:2375 tcp://localhost:2375 tcp://127.0.0.1:2375"
           FOUND=""
           for i in $(seq 1 20); do
             for host in $CANDIDATES; do
-              if DOCKER_HOST="$host" docker info >/dev/null 2>&1; then
+              if DOCKER_HOST="$host" timeout 5 docker info >/dev/null 2>&1; then
                 FOUND="$host"
                 break 2
               fi
@@ -75,8 +92,8 @@ jobs:
           done
 
           if [ -z "$FOUND" ]; then
-            echo "Kein Docker-Daemon erreichbar. Letzter Versuch im Klartext:" >&2
-            DOCKER_HOST=tcp://docker:2375 docker info || true
+            echo "Kein Docker-Daemon erreichbar. Geprueft wurde:" >&2
+            for host in $CANDIDATES; do echo "  $host" >&2; done
             exit 1
           fi
 
