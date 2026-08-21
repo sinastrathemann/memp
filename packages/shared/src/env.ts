@@ -28,6 +28,9 @@ const envSchema = z.object({
   // gehoeren interne Adressen und Listen-IDs nicht in den Quellcode.
   SHAREPOINT_SITE_URL: z.string().url().optional(),
   SHAREPOINT_STUDIS_LIST_ID: z.string().optional(),
+  // Notausgang fuer die erste Administratorin (siehe packages/auth/src/bootstrap-admins.ts) --
+  // kommaseparierte Liste von E-Mail-Adressen. Optional, Vorgabe leer = kein Bootstrap.
+  MEXP_BOOTSTRAP_ADMINS: z.string().default(""),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
@@ -45,4 +48,16 @@ export function loadEnv(): AppEnv {
   }
   cached = parsed.data;
   return cached;
+}
+
+/**
+ * Nur fuer Tests: setzt den geladenen ENV-Cache zurueck, damit ein Testfall mit
+ * geaenderten process.env-Werten eine frische Validierung erzwingen kann.
+ * Produktionscode ruft das nie auf -- der Cache lebt dort bewusst fuer die gesamte
+ * Prozesslaufzeit (siehe loadEnv oben). vi.resetModules() reicht dafuer nicht: @mexp/shared
+ * wird als Workspace-Paket ueber den echten Node-Modul-Cache geladen, den Vitests
+ * Modul-Registry-Reset nicht erfasst.
+ */
+export function resetLoadEnvCacheForTests(): void {
+  cached = undefined;
 }

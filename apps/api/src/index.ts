@@ -2,7 +2,7 @@ import "./bootstrap.js";
 
 import { resolve } from "node:path";
 import { serve } from "@hono/node-server";
-import { hubAuthMiddleware } from "@mexp/auth";
+import { hubAuthMiddleware, parseBootstrapAdmins } from "@mexp/auth";
 import { rootLogger } from "@mexp/shared";
 import { Hono } from "hono";
 import { env } from "./deps.js";
@@ -86,6 +86,18 @@ mountStatic(app, webRoot);
 const port = Number(process.env.PORT ?? env.API_PORT ?? 3000);
 const host = process.env.HOST ?? env.API_HOST ?? "0.0.0.0";
 
+// W5: zweite der beiden im Design-Spec (§3) zugesagten Sicherungen fuer den Admin-
+// Bootstrap -- die erste (Log bei Rollenvergabe) sitzt in routes/_user-resolution.ts.
+// Nur die Anzahl, keine Adressen (PII). Gehoert entfernt, sobald der regulaere Weg
+// ueber AppHub.Admin steht (siehe docs/runbook.md).
+const bootstrapAdminCount = parseBootstrapAdmins(env.MEXP_BOOTSTRAP_ADMINS).length;
+
 serve({ fetch: app.fetch, port, hostname: host }, (info) => {
+  if (bootstrapAdminCount > 0) {
+    log.warn(
+      { count: bootstrapAdminCount },
+      "MEXP_BOOTSTRAP_ADMINS gesetzt - Notausgang aktiv, siehe docs/runbook.md",
+    );
+  }
   log.info({ port: info.port, host, webRoot }, "mEXP started");
 });

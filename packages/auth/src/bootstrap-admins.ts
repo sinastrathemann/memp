@@ -13,6 +13,7 @@
  *
  * Die Variable gehoert entfernt, sobald AppHub.Admin im Hub vergeben ist.
  */
+import { loadEnv } from "@mexp/shared";
 
 /** Kommaseparierte Liste in normalisierte E-Mail-Adressen zerlegen. */
 export function parseBootstrapAdmins(raw: string | undefined): string[] {
@@ -22,10 +23,14 @@ export function parseBootstrapAdmins(raw: string | undefined): string[] {
     .filter((entry) => entry.length > 0);
 }
 
-/** Steht diese Adresse in MEXP_BOOTSTRAP_ADMINS? */
+/**
+ * Steht diese Adresse in MEXP_BOOTSTRAP_ADMINS? Liest ueber loadEnv() (Zod-ENV-Schema,
+ * siehe packages/shared/src/env.ts) statt direkt aus process.env -- das Ergebnis ist
+ * pro Prozess gecacht, isBootstrapAdmin laeuft aber bei jedem authentifizierten Request,
+ * vorher wurde die Liste dabei jedes Mal neu geparst.
+ */
 export function isBootstrapAdmin(email: string | null | undefined): boolean {
   if (!email) return false;
-  const allowed = parseBootstrapAdmins(process.env.MEXP_BOOTSTRAP_ADMINS);
-  if (allowed.length === 0) return false;
+  const allowed = parseBootstrapAdmins(loadEnv().MEXP_BOOTSTRAP_ADMINS);
   return allowed.includes(email.trim().toLowerCase());
 }
