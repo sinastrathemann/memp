@@ -225,6 +225,7 @@
     }
   },
   "blueprints": {
+    "sectionTitle": "Vorlagen",
     "intro": "Vorlagen beschleunigen das Anlegen wiederkehrender Event-Typen. Die Standardwerte werden beim Anwenden in ein neues Event kopiert.",
     "empty": "Noch keine Vorlagen angelegt.",
     "create": "Vorlage anlegen",

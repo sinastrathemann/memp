@@ -225,6 +225,7 @@
     }
   },
   "blueprints": {
+    "sectionTitle": "Templates",
     "intro": "Blueprints speed up creating recurring event types. Defaults are copied into a new event on apply.",
     "empty": "No blueprints yet.",
     "create": "Create blueprint",

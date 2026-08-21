@@ -117,6 +117,7 @@ export default function BlueprintsPage() {
 
   return (
     <>
+      <h2 style={{ marginTop: 0 }}>{t("blueprints.sectionTitle")}</h2>
       <div className="row-between" style={{ marginBottom: "var(--space-6)" }}>
         <p className="muted page-subtitle" style={{ marginTop: 0 }}>
           {t("blueprints.intro")}

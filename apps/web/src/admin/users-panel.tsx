@@ -65,6 +65,7 @@ export function UsersPanel() {
 
   return (
     <>
+      <h2 style={{ marginTop: 0 }}>{t("admin.usersListTitle")}</h2>
       <CreateUserForm
         onSubmit={(v) => createMut.mutateAsync(v).catch(() => undefined)}
         pending={createMut.isPending}
@@ -72,7 +73,6 @@ export function UsersPanel() {
       />
 
       <RoleLegend />
-      <h2 style={{ marginTop: "var(--space-4)" }}>{t("admin.usersListTitle")}</h2>
       {isLoading && <div className="card muted">{t("auth.loading")}</div>}
       {data && (
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
