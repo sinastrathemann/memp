@@ -15,6 +15,13 @@ export function UsersPanel() {
     queryFn: () => apiFetch<{ users: AdminUserRow[] }>("/admin/users"),
   });
 
+  // Ausgetretene bleiben im Bestand, damit alte Teilnehmerlisten weiter Namen
+  // statt Luecken zeigen (siehe admin-personio.ts) -- im Alltag stoeren sie
+  // aber. Deshalb standardmaessig ausgeblendet, auf Wunsch einblendbar.
+  const [showInactive, setShowInactive] = useState(false);
+  const visibleUsers = (data?.users ?? []).filter((u) => showInactive || u.isActive !== false);
+  const hiddenCount = (data?.users.length ?? 0) - visibleUsers.length;
+
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin", "users"] });
 
   const createMut = useMutation({
@@ -75,6 +82,24 @@ export function UsersPanel() {
       <RoleLegend />
       {isLoading && <div className="card muted">{t("auth.loading")}</div>}
       {data && (
+        <label
+          className="row"
+          style={{ gap: 8, alignItems: "center", marginBottom: "var(--space-3)" }}
+        >
+          <input
+            type="checkbox"
+            checked={showInactive}
+            onChange={(e) => setShowInactive(e.target.checked)}
+          />
+          <span>
+            {t("admin.showInactive")}
+            {hiddenCount > 0 && !showInactive && (
+              <span className="muted"> {t("admin.hiddenCount", { hidden: hiddenCount })}</span>
+            )}
+          </span>
+        </label>
+      )}
+      {data && (
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
           <table className="table">
             <thead>
@@ -88,7 +113,7 @@ export function UsersPanel() {
               </tr>
             </thead>
             <tbody>
-              {data.users.map((u) => (
+              {visibleUsers.map((u) => (
                 <tr key={u.id}>
                   <td className="text-bold">{u.email}</td>
                   <td>

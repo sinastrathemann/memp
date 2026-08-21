@@ -97,7 +97,9 @@
       "budget_owner": "approves budgets",
       "manager": "manages portfolio and reports",
       "admin": "additionally manages users and roles"
-    }
+    },
+    "showInactive": "Also show former employees",
+    "hiddenCount": "({{hidden}} hidden)"
   },
   "events": {
     "navLink": "Events",

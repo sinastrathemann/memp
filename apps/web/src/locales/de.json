@@ -97,7 +97,9 @@
       "budget_owner": "gibt Budgets frei",
       "manager": "verwaltet Portfolio und Auswertungen",
       "admin": "verwaltet zusätzlich Nutzer und Rollen"
-    }
+    },
+    "showInactive": "Auch ausgetretene Personen anzeigen",
+    "hiddenCount": "({{hidden}} ausgeblendet)"
   },
   "events": {
     "navLink": "Events",
