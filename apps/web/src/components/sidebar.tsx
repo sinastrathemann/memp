@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
+import { ADMIN_AREA_ROLES } from "../admin/role-order";
 import logoUrl from "../assets/logo-mindsquare.png";
 import { useAuth } from "../auth/auth-context";
 
@@ -61,7 +62,7 @@ export function Sidebar() {
             Reports
           </NavLink>
         )}
-        {hasRole("admin", "manager", "event_office", "werkstudent") && (
+        {hasRole(...ADMIN_AREA_ROLES) && (
           <NavLink
             to="/admin"
             className={({ isActive }) => `ms-sidebar-link${isActive ? " active" : ""}`}

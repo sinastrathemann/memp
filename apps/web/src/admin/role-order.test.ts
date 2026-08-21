@@ -12,8 +12,6 @@ describe("ROLE_EXPLANATION_ORDER", () => {
   });
 
   it("endet mit admin", () => {
-    expect(ROLE_EXPLANATION_ORDER[ROLE_EXPLANATION_ORDER.length - 1]).toBe(
-      "admin",
-    );
+    expect(ROLE_EXPLANATION_ORDER[ROLE_EXPLANATION_ORDER.length - 1]).toBe("admin");
   });
 });

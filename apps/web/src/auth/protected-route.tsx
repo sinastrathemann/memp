@@ -5,7 +5,7 @@ import type { RoleName } from "./types";
 
 interface Props {
   children: ReactNode;
-  roles?: RoleName[];
+  roles?: readonly RoleName[];
 }
 
 export function ProtectedRoute({ children, roles }: Props) {

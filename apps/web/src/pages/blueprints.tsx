@@ -116,13 +116,11 @@ export default function BlueprintsPage() {
   };
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <div className="eyebrow">Standards</div>
-          <h1 className="page-title">{t("blueprints.title")}</h1>
-          <p className="muted page-subtitle">{t("blueprints.intro")}</p>
-        </div>
+    <>
+      <div className="row-between" style={{ marginBottom: "var(--space-6)" }}>
+        <p className="muted page-subtitle" style={{ marginTop: 0 }}>
+          {t("blueprints.intro")}
+        </p>
         {canWrite && (
           <button
             type="button"
@@ -391,6 +389,6 @@ export default function BlueprintsPage() {
           </form>
         </div>
       )}
-    </div>
+    </>
   );
 }

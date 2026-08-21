@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { ADMIN_AREA_ROLES } from "./admin/role-order";
 import { AuthProvider } from "./auth/auth-context";
 import { ProtectedRoute } from "./auth/protected-route";
 import { BASE_PATH } from "./base-path";
@@ -75,7 +76,7 @@ function AppRoutes() {
       <Route
         path="/admin/*"
         element={
-          <ProtectedRoute roles={["admin", "manager", "event_office", "werkstudent"]}>
+          <ProtectedRoute roles={ADMIN_AREA_ROLES}>
             <AdminPage />
           </ProtectedRoute>
         }

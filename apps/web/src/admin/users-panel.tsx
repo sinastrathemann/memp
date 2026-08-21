@@ -64,14 +64,7 @@ export function UsersPanel() {
   });
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <div className="eyebrow">Administration</div>
-          <h1 className="page-title">{t("admin.usersTitle")}</h1>
-        </div>
-      </div>
-
+    <>
       <CreateUserForm
         onSubmit={(v) => createMut.mutateAsync(v).catch(() => undefined)}
         pending={createMut.isPending}
@@ -166,7 +159,7 @@ export function UsersPanel() {
           </table>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

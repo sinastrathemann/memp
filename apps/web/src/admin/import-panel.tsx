@@ -78,7 +78,9 @@ export function ImportPanel() {
 
   return (
     <>
-      <div className="row" style={{ gap: 12, marginTop: "var(--space-8)", alignItems: "center" }}>
+      <h2 style={{ marginTop: 0 }}>{t("admin.importTitle")}</h2>
+
+      <div className="row" style={{ gap: 12, alignItems: "center" }}>
         <button
           type="button"
           className="btn btn-primary"

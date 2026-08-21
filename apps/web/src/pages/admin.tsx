@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { ImportPanel } from "../admin/import-panel";
+import { ADMIN_AREA_ROLES } from "../admin/role-order";
 import { UsersPanel } from "../admin/users-panel";
 import { useAuth } from "../auth/auth-context";
 import BlueprintsPage from "./blueprints";
@@ -14,7 +15,7 @@ export default function AdminPage() {
   const { t } = useTranslation();
   const { hasRole } = useAuth();
   const isAdmin = hasRole("admin");
-  const mayBlueprints = hasRole("admin", "manager", "event_office", "werkstudent");
+  const mayBlueprints = hasRole(...ADMIN_AREA_ROLES);
 
   const tabClass = ({ isActive }: { isActive: boolean }) =>
     `btn btn-sm${isActive ? " btn-primary" : " btn-ghost"}`;

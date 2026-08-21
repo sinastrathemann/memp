@@ -48,8 +48,6 @@
     "errorGeneric": "Sign in failed. Please try again."
   },
   "admin": {
-    "usersLink": "User management",
-    "usersTitle": "User management",
     "usersListTitle": "Users",
     "colEmail": "Email",
     "colDisplayName": "Display name",
@@ -227,8 +225,6 @@
     }
   },
   "blueprints": {
-    "navLink": "Blueprints",
-    "title": "Event blueprints",
     "intro": "Blueprints speed up creating recurring event types. Defaults are copied into a new event on apply.",
     "empty": "No blueprints yet.",
     "create": "Create blueprint",

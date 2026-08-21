@@ -20,3 +20,17 @@ export const ROLE_EXPLANATION_ORDER: readonly RoleName[] = [
   "manager",
   "admin",
 ] as const;
+
+/**
+ * Rollen, die den Verwaltungsbereich (`/admin`) betreten duerfen. Gilt fuer die
+ * Route selbst UND fuer den Sidebar-Menuepunkt — beide muessen diese Liste
+ * verwenden, sonst kann eine Rolle in der Sidebar erscheinen, deren Reiter
+ * niemand rendert (oder umgekehrt). Einzelne Reiter innerhalb von `/admin`
+ * pruefen zusaetzlich eigene, engere Rollen (siehe admin.tsx).
+ */
+export const ADMIN_AREA_ROLES: readonly RoleName[] = [
+  "admin",
+  "manager",
+  "event_office",
+  "werkstudent",
+] as const;
