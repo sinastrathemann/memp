@@ -185,7 +185,7 @@ export function isBootstrapAdmin(email: string | null | undefined): boolean {
 npx vitest run packages/auth/tests/bootstrap-admins.test.ts
 ```
 
-Erwartet: PASS, 9 Tests
+Erwartet: PASS, 8 Tests
 
 - [ ] **Step 5: Export ergänzen**
 
