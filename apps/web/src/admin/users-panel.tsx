@@ -8,7 +8,7 @@ import type { AdminUserRow, RoleName } from "../auth/types";
 import { RoleLegend } from "./role-legend";
 
 export function UsersPanel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "users"],
@@ -90,6 +90,7 @@ export function UsersPanel() {
                 <th>{t("admin.colDisplayName")}</th>
                 <th>{t("admin.colRoles")}</th>
                 <th>{t("admin.colStatus")}</th>
+                <th>{t("admin.colLastSeen")}</th>
                 <th>{t("admin.colActions")}</th>
               </tr>
             </thead>
@@ -130,6 +131,11 @@ export function UsersPanel() {
                     <span className={u.isActive ? "badge badge-success" : "badge badge-muted"}>
                       {u.isActive ? t("admin.active") : t("admin.inactive")}
                     </span>
+                  </td>
+                  <td>
+                    {u.lastSeenAt
+                      ? new Date(u.lastSeenAt).toLocaleString(i18n.language)
+                      : t("admin.neverSeen")}
                   </td>
                   <td>
                     <div className="row" style={{ gap: "var(--space-2)" }}>

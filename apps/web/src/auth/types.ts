@@ -48,6 +48,9 @@ export interface AdminUserRow {
   roles: RoleName[];
   createdAt: string;
   lastLoginAt: string | null;
+  /** Letzter authentifizierter Request. Fehlt bei Nutzern, die sich nie
+   *  angemeldet haben — etwa frisch aus Personio importierte. */
+  lastSeenAt?: string;
   // Optional: nur gesetzt für User, die aus/mit Personio synchronisiert wurden
   // (siehe apps/api/src/routes/admin-personio.ts).
   personioId?: string;
