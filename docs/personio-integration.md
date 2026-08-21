@@ -45,7 +45,7 @@ Nur die für Event-Management nötigen Felder werden gesynct. Kein Gehalt, kein 
   Token-Auth (gecacht ~23h) + `GET /company/employees`, Response via Zod geparst
   (`packages/infrastructure/src/personio/personio.types.ts`).
 - Endpoint: `POST /api/admin/personio/sync` (`apps/api/src/routes/admin-personio.ts`),
-  Hub-Admin-only (`requireHubAdmin`).
+  Admin-only (`requireMexpRole("admin")`) — echte Hub-Admins sind eingeschlossen.
 - User-Modell-Erweiterung: `MexpUser` in `apps/api/src/routes/_user-resolution.ts` um
   `personioId`, `department`, `position`, `office`, `personioStatus`, `personioSyncedAt`
   (alle optional — bestehende, nicht-Personio-verknüpfte User bleiben unverändert).

@@ -12,6 +12,39 @@ import { shouldTouchLastSeen } from "./_last-seen.js";
 
 const log = rootLogger.child({ module: "api/user-resolution" });
 
+// W6: ohne diese Drossel loggt resolveMexpRoles bei JEDEM authentifizierten Request
+// des Bootstrap-Admins eine Warnung -- ein Arbeitstag erzeugt hunderte identischer
+// Zeilen. Pro Prozess und Hub-User-Id genuegt eine einzige Zeile; der Prozess lebt
+// kurz genug (Container-Neustart), dass ein Set auf Modulebene nicht unbegrenzt waechst.
+const bootstrapWarned = new Set<string>();
+
+function logBootstrapGrantOnce(hubUserId: string): void {
+  if (bootstrapWarned.has(hubUserId)) return;
+  bootstrapWarned.add(hubUserId);
+  // Absichtlich laut: sonst raetselt spaeter jemand, woher die Rechte kamen. E-Mail
+  // bleibt draussen (PII), die Hub-User-Id genuegt zur Zuordnung.
+  log.warn({ userId: hubUserId }, "admin granted via MEXP_BOOTSTRAP_ADMINS");
+}
+
+/**
+ * Schreibt lastSeenAt nur, wenn fuer diese Hub-User-Id bereits ein Store-Eintrag
+ * existiert -- legt bewusst KEINEN neuen an. Hub-Admins beziehen ihre Rechte allein
+ * aus der Hub-Rolle AppHub.Admin, nicht aus dem Store; wuerde hier automatisch ein
+ * Eintrag angelegt, laende jede Person mit AppHub.Admin allein durchs Einloggen in
+ * der Nutzerliste, auch ohne je mEXP-seitig registriert worden zu sein. Existiert
+ * aber schon ein Eintrag (z. B. aus einem frueheren Import), soll lastSeenAt trotzdem
+ * fortgeschrieben werden -- sonst zeigt die Nutzerliste fuer aktive Hub-Admins
+ * dauerhaft "-" (Befund W1).
+ */
+function touchLastSeenIfKnown(hubUserId: string): void {
+  const known = mexpUserStore.get(hubUserId);
+  if (!known) return;
+  const now = Date.now();
+  if (shouldTouchLastSeen(known.lastSeenAt, now)) {
+    mexpUserStore.set(hubUserId, { ...known, lastSeenAt: new Date(now).toISOString() });
+  }
+}
+
 export interface MexpUser {
   id: string;
   email: string | null;
@@ -53,27 +86,47 @@ export const mexpUserStore = persistentMap<MexpUser>("memp-users");
 
 /**
  * Liefert die mEXP-internen Rollen des aktuell eingeloggten Hub-Users.
- * - Hub-Admins (isHubAdmin === true) bekommen immer ["admin"] — unconditional override.
- * - Bootstrap-Admins (MEXP_BOOTSTRAP_ADMINS, siehe isBootstrapAdmin) bekommen ebenfalls
- *   ["admin"] — Notausgang, solange im Hub niemand AppHub.Admin hat.
+ * - Hub-Admins (isHubAdmin === true) bekommen immer ["admin"] — unconditional override,
+ *   unabhaengig von einem eventuell vorhandenen Store-Eintrag.
+ * - Bootstrap-Admins (MEXP_BOOTSTRAP_ADMINS, siehe isBootstrapAdmin) durchlaufen denselben
+ *   Registrierungspfad wie ein unbekannter Nutzer, nur mit "admin" in den Rollen — bei
+ *   einem bereits bekannten Nutzer wird "admin" ergaenzt, nicht die vorhandenen Rollen
+ *   ersetzt (mEXP-Rollen sind additiv, siehe Befund K2/G6). So landet die Person im Store,
+ *   taucht in GET /admin/users auf und kann sich eine dauerhafte Rolle geben.
  * - Unbekannte Hub-User werden beim ersten Request automatisch mit Rolle "participant" registriert.
  */
 export function resolveMexpRoles(c: Context): string[] {
   const hub = getHubUser(c);
-  if (hub.isHubAdmin) return ["admin"];
 
-  // Notausgang, solange im Hub niemand AppHub.Admin hat. Absichtlich laut:
-  // sonst raetselt spaeter jemand, woher die Rechte kamen. E-Mail bleibt
-  // draussen (PII), die Hub-User-Id genuegt zur Zuordnung.
-  if (isBootstrapAdmin(hub.email)) {
-    log.warn({ userId: hub.id }, "admin granted via MEXP_BOOTSTRAP_ADMINS");
+  if (hub.isHubAdmin) {
+    touchLastSeenIfKnown(hub.id);
     return ["admin"];
   }
+
+  // Notausgang, solange im Hub niemand AppHub.Admin hat.
+  const bootstrap = isBootstrapAdmin(hub.email);
+  if (bootstrap) logBootstrapGrantOnce(hub.id);
 
   const known = mexpUserStore.get(hub.id);
   if (known) {
     const now = Date.now();
-    if (shouldTouchLastSeen(known.lastSeenAt, now)) {
+    const grantsAdmin = bootstrap && !known.roles.includes("admin");
+    const touch = shouldTouchLastSeen(known.lastSeenAt, now);
+
+    if (grantsAdmin) {
+      const updated: MexpUser = {
+        ...known,
+        roles: [...known.roles, "admin"],
+        updatedAt: new Date(now).toISOString(),
+      };
+      // exactOptionalPropertyTypes: lastSeenAt nur bei Bedarf setzen, sonst bleibt der
+      // vorhandene Wert (oder das Fehlen) unangetastet statt explizit auf undefined.
+      if (touch) updated.lastSeenAt = new Date(now).toISOString();
+      mexpUserStore.set(hub.id, updated);
+      return updated.roles;
+    }
+
+    if (touch) {
       mexpUserStore.set(hub.id, { ...known, lastSeenAt: new Date(now).toISOString() });
     }
     return known.roles;
@@ -84,7 +137,7 @@ export function resolveMexpRoles(c: Context): string[] {
     id: hub.id,
     email: hub.email,
     displayName: hub.name,
-    roles: ["participant"],
+    roles: bootstrap ? ["admin"] : ["participant"],
     isActive: true,
     createdAt: now,
     updatedAt: now,

@@ -17,8 +17,8 @@ CSV-Export aus SharePoint + Upload in mEXP.
 
 ## Endpoint
 
-`POST /api/admin/users/import-csv` (Hub-Admin-only, siehe
-`apps/api/src/routes/admin-users-import.ts`)
+`POST /api/admin/users/import-csv` (Admin-only, requireMexpRole("admin") — echte
+Hub-Admins eingeschlossen, siehe `apps/api/src/routes/admin-users-import.ts`)
 
 Akzeptiert drei Content-Types:
 - `multipart/form-data` mit Feld `file` (das nutzt der Button in der Web-UI)

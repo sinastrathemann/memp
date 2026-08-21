@@ -1,4 +1,3 @@
-import { requireHubAdmin } from "@mexp/auth";
 /**
  * Manueller Personio-Employee-Sync (Sinas Design-Entscheidung: Button statt CRON).
  * - Neue Employees (per E-Mail-Match) → auto als mEXP-User mit Rolle "participant".
@@ -6,20 +5,22 @@ import { requireHubAdmin } from "@mexp/auth";
  * - mEXP-User mit `personioId`, die nicht mehr in der aktuellen Personio-Liste auftauchen
  *   (Austritt) → in mEXP deaktiviert (isActive=false), NICHT gelöscht — historische
  *   Teilnahmen bleiben erhalten.
- * Hub-Admin-only (requireHubAdmin): der Sync legt/ändert User account-weit, das ist
- * bewusst strenger als das mEXP-interne "admin"-Rolle-Gate von admin-users.ts.
+ * Admin-only (requireMexpRole("admin")): der Sync legt/aendert User account-weit.
+ * Die mEXP-Adminrolle wird ausschliesslich von Admins vergeben; requireMexpRole prueft
+ * hub.isHubAdmin selbst zuerst (siehe packages/auth/src/hub-middleware.ts) — echte
+ * Hub-Admins sind also eingeschlossen.
  */
 import { PersonioClient } from "@mexp/infrastructure";
 import { rootLogger } from "@mexp/shared";
 import { Hono } from "hono";
 import { env } from "../deps.js";
-import { type MexpUser, mexpUserStore } from "./_user-resolution.js";
+import { type MexpUser, mexpUserStore, requireMexpRole } from "./_user-resolution.js";
 
 const log = rootLogger.child({ module: "api/admin/personio" });
 
 export const adminPersonioRoutes = new Hono();
 
-adminPersonioRoutes.post("/sync", requireHubAdmin(), async (c) => {
+adminPersonioRoutes.post("/sync", requireMexpRole("admin"), async (c) => {
   if (!env.PERSONIO_CLIENT_ID || !env.PERSONIO_CLIENT_SECRET) {
     return c.json(
       {

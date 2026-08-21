@@ -117,7 +117,8 @@ Team, Vertragsende). Kein Gehalt, keine sonstigen HR-Daten. Details in
   `GET .../lists/{list-id}/items`, Response via Zod geparst
   (`packages/infrastructure/src/sharepoint/sharepoint.types.ts`).
 - Endpoint: `POST /api/admin/sharepoint/sync-studis`
-  (`apps/api/src/routes/admin-sharepoint.ts`), Hub-Admin-only (`requireHubAdmin`).
+  (`apps/api/src/routes/admin-sharepoint.ts`), Admin-only (`requireMexpRole("admin")`) —
+  echte Hub-Admins sind eingeschlossen.
 - User-Modell-Erweiterung: `MexpUser` in `apps/api/src/routes/_user-resolution.ts` um
   `sharepointStudiId`, `sharepointSyncedAt` (alle optional — bestehende, nicht
   SharePoint-verknüpfte User bleiben unverändert; `position`/`team` werden mit

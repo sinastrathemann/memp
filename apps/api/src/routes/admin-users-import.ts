@@ -12,14 +12,15 @@ import { randomUUID } from "node:crypto";
  *   admin-sharepoint.ts): Sina importiert CSVs teilweise, nicht immer alle Studis auf
  *   einmal — ein User, der in dieser CSV fehlt, heißt nicht "ausgeschieden".
  *   Deaktivierung bleibt bewusst manuell (siehe admin-users.tsx).
- * Hub-Admin-only (requireHubAdmin): der Import legt/ändert User account-weit, das ist
- * bewusst strenger als das mEXP-interne "admin"-Rolle-Gate von admin-users.ts.
+ * Admin-only (requireMexpRole("admin")): der Import legt/aendert User account-weit.
+ * Die mEXP-Adminrolle wird ausschliesslich von Admins vergeben; requireMexpRole prueft
+ * hub.isHubAdmin selbst zuerst (siehe packages/auth/src/hub-middleware.ts) — echte
+ * Hub-Admins sind also eingeschlossen.
  */
-import { requireHubAdmin } from "@mexp/auth";
 import { rootLogger } from "@mexp/shared";
 import { Hono } from "hono";
 import { z } from "zod";
-import { type MexpUser, mexpUserStore } from "./_user-resolution.js";
+import { type MexpUser, mexpUserStore, requireMexpRole } from "./_user-resolution.js";
 
 const log = rootLogger.child({ module: "api/admin/users-import" });
 export const adminUsersImportRoutes = new Hono();
@@ -113,7 +114,7 @@ function pick(row: Record<string, string>, aliases: string[]): string | null {
 
 const jsonBodySchema = z.object({ csv: z.string().min(1) });
 
-adminUsersImportRoutes.post("/import-csv", requireHubAdmin(), async (c) => {
+adminUsersImportRoutes.post("/import-csv", requireMexpRole("admin"), async (c) => {
   const contentType = c.req.header("content-type") ?? "";
   let csvText = "";
 

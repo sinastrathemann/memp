@@ -1,4 +1,3 @@
-import { requireHubAdmin } from "@mexp/auth";
 /**
  * Manueller SharePoint-Werkstudi/Praktikanten-Sync (Sinas Design-Entscheidung: Button
  * statt CRON, analog zum Personio-Sync in admin-personio.ts).
@@ -11,20 +10,22 @@ import { requireHubAdmin } from "@mexp/auth";
  * - mEXP-User mit `sharepointStudiId`, die nicht mehr in der aktuellen SharePoint-Liste
  *   auftauchen (Vertragsende) → in mEXP deaktiviert (isActive=false), NICHT gelöscht —
  *   historische Teilnahmen bleiben erhalten.
- * Hub-Admin-only (requireHubAdmin): der Sync legt/ändert User account-weit, das ist
- * bewusst strenger als das mEXP-interne "admin"-Rolle-Gate von admin-users.ts.
+ * Admin-only (requireMexpRole("admin")): der Sync legt/aendert User account-weit.
+ * Die mEXP-Adminrolle wird ausschliesslich von Admins vergeben; requireMexpRole prueft
+ * hub.isHubAdmin selbst zuerst (siehe packages/auth/src/hub-middleware.ts) — echte
+ * Hub-Admins sind also eingeschlossen.
  */
 import { SharePointClient } from "@mexp/infrastructure";
 import { rootLogger } from "@mexp/shared";
 import { Hono } from "hono";
 import { env } from "../deps.js";
-import { type MexpUser, mexpUserStore } from "./_user-resolution.js";
+import { type MexpUser, mexpUserStore, requireMexpRole } from "./_user-resolution.js";
 
 const log = rootLogger.child({ module: "api/admin/sharepoint" });
 
 export const adminSharepointRoutes = new Hono();
 
-adminSharepointRoutes.post("/sync-studis", requireHubAdmin(), async (c) => {
+adminSharepointRoutes.post("/sync-studis", requireMexpRole("admin"), async (c) => {
   if (
     !env.AZURE_TENANT_ID ||
     !env.AZURE_CLIENT_ID ||
