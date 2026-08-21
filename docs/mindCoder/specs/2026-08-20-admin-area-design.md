@@ -74,7 +74,7 @@ Vertrauensweg nutzbar.
 
 Zwei Sicherungen:
 
-- **Jede so vergebene Rolle wird geloggt** (`module: api/auth`, Level `warn`,
+- **Jede so vergebene Rolle wird geloggt** (`module: api/user-resolution`, Level `warn`,
   E-Mail redacted gemäß PII-Regel). Sonst rätselt später jemand, woher die
   Rechte kamen.
 - **Beim Start wird die Variable protokolliert**, wenn sie gesetzt ist — sie
@@ -181,3 +181,40 @@ Die Tests liegen neben der Quelldatei, wie in `packages/auth/tests/` bereits
   auftritt.
 - `MEXP_BOOTSTRAP_ADMINS` gehört entfernt, sobald `AppHub.Admin` im Hub vergeben
   ist. Ein Hinweis dazu kommt in den Runbook.
+
+## Nachtrag 2026-08-21
+
+Gegenüber dem oben beschriebenen und abgestimmten Entwurf hat sich die
+Bootstrap-Logik in der Umsetzung geändert (siehe
+[`resolveMexpRoles`](../../../apps/api/src/routes/_user-resolution.ts)):
+
+- **Kein frühes `return` mehr vor der Store-Abfrage.** §3 und §7 beschreiben
+  den Bootstrap als Prüfung, die *vor* der Store-Abfrage greift und mit
+  `return ["admin"]` abschließt. Tatsächlich läuft ein Bootstrap-Treffer in
+  denselben Pfad wie bei einem bekannten oder unbekannten Nutzer: er wird nur
+  vorgemerkt (`isBootstrapAdmin(hub.email)`), die Store-Abfrage findet
+  trotzdem statt.
+- **Die Person wird im Store registriert, nicht nur mit einer flüchtigen
+  Rolle beantwortet.** Ohne vorhandenen Store-Eintrag legt ein
+  Bootstrap-Treffer jetzt einen neuen `MexpUser` mit `roles: ["admin"]` an.
+  Die Person taucht damit sofort unter *Verwaltung → Nutzer* auf und kann
+  dort weitere Rollen erhalten, statt nur für die Dauer des Requests admin zu
+  sein.
+- **Additiv statt ersetzend.** Existiert bereits ein Store-Eintrag mit
+  anderen Rollen (z. B. `["manager", "event_office"]`), ergänzt der Bootstrap
+  `admin`, statt die vorhandenen Rollen durch `["admin"]` zu ersetzen. Das
+  entspricht der additiven mEXP-Rollensemantik aus §4 („Reiter Nutzer").
+
+Grund für die Abweichung: Mit dem im Entwurf beschriebenen frühen
+`return ["admin"]` wäre die Bootstrap-Person nie im Store gelandet, solange
+sie sich nicht über einen anderen Weg (z. B. CSV-Import) dort registriert —
+die Nutzerliste hätte sie nicht angezeigt, und ein Übergang von der
+Notausgang-Rolle zu regulär vergebenen Rollen wäre ohne Store-Eintrag nicht
+möglich gewesen. Die Änderung wurde in der zweiten Prüfrunde gefunden und
+behoben; die zugehörigen Tests liegen in
+`apps/api/tests/user-resolution.test.ts` ("registriert den Bootstrap-Admin im
+Store (K2)", "ergänzt admin bei einem bekannten Nutzer, ohne vorhandene
+Rollen zu ersetzen (K2/G6)").
+
+Der Rest des Entwurfs (Abschnitte 1–8) bleibt wie abgestimmt gültig; dieser
+Nachtrag korrigiert nur den abweichenden Punkt.

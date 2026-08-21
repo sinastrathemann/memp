@@ -90,8 +90,15 @@ MEXP_BOOTSTRAP_ADMINS=vorname.nachname@mindsquare.de
 Danach **Neue Version einspielen**. Wer in der Liste steht, bekommt beim
 Anmelden `admin` und kann unter *Verwaltung → Nutzer* Rollen vergeben.
 
-Jede so vergebene Rolle landet als `warn` im Container-Log
-(`admin granted via MEXP_BOOTSTRAP_ADMINS`).
+Pro Prozess und Hub-User-Id landet **eine** Zeile als `warn` im Container-Log
+(`admin granted via MEXP_BOOTSTRAP_ADMINS`) — nicht bei jeder Anmeldung
+erneut, das ist gedrosselt. Beim Start protokolliert der Container zusätzlich,
+wie viele Adressen in `MEXP_BOOTSTRAP_ADMINS` stehen.
+
+Solange die Adresse in der Liste steht, macht ein manuelles Entziehen der
+Rolle über *Verwaltung → Nutzer* (bzw. `DELETE /admin/users/:id/roles/admin`)
+sie beim nächsten Request dieser Person automatisch wieder wahr — der
+Notausgang überstimmt das Entziehen stillschweigend.
 
 > **Wieder entfernen,** sobald im Hub jemand `AppHub.Admin` trägt oder die
 > Rollen intern vergeben sind. Der Notausgang soll kein Dauerzustand werden.
