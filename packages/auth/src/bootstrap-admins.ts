@@ -25,9 +25,10 @@ export function parseBootstrapAdmins(raw: string | undefined): string[] {
 
 /**
  * Steht diese Adresse in MEXP_BOOTSTRAP_ADMINS? Liest ueber loadEnv() (Zod-ENV-Schema,
- * siehe packages/shared/src/env.ts) statt direkt aus process.env -- das Ergebnis ist
- * pro Prozess gecacht, isBootstrapAdmin laeuft aber bei jedem authentifizierten Request,
- * vorher wurde die Liste dabei jedes Mal neu geparst.
+ * siehe packages/shared/src/env.ts) statt direkt aus process.env -- nur dieser
+ * ENV-Zugriff samt Zod-Pruefung ist pro Prozess gecacht. parseBootstrapAdmins()
+ * selbst (split/map/filter) laeuft weiterhin bei jedem authentifizierten Request neu --
+ * die Liste ist kurz genug, dass sich ein zusaetzliches Memo dafuer nicht lohnt.
  */
 export function isBootstrapAdmin(email: string | null | undefined): boolean {
   if (!email) return false;
