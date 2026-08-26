@@ -23,15 +23,15 @@
     "@mexp/shared": "workspace:*",
     "@mexp/domain": "workspace:*",
     "@mexp/application": "workspace:*",
-    "argon2": "^0.41.1",
+    "argon2": "^0.45.1",
     "bullmq": "^5.28.0",
-    "drizzle-orm": "^0.36.4",
+    "drizzle-orm": "^0.45.2",
     "ioredis": "^5.4.1",
     "postgres": "^3.4.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.28.0",
-    "tsx": "^4.19.2"
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.12"
   }
 }
