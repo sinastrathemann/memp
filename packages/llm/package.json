@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@mexp/shared": "workspace:*",
-    "yaml": "^2.6.1",
+    "yaml": "^2.9.0",
     "zod": "^3.23.8"
   }
 }
